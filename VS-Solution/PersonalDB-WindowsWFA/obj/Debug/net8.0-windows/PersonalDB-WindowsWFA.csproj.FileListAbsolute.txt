@@ -1,0 +1,17 @@
+D:\Github Local REPO\PersonalDB\VS-Solution\PersonalDB-WindowsWFA\bin\Debug\net8.0-windows\PersonalDB-WindowsWFA.exe
+D:\Github Local REPO\PersonalDB\VS-Solution\PersonalDB-WindowsWFA\bin\Debug\net8.0-windows\PersonalDB-WindowsWFA.deps.json
+D:\Github Local REPO\PersonalDB\VS-Solution\PersonalDB-WindowsWFA\bin\Debug\net8.0-windows\PersonalDB-WindowsWFA.runtimeconfig.json
+D:\Github Local REPO\PersonalDB\VS-Solution\PersonalDB-WindowsWFA\bin\Debug\net8.0-windows\PersonalDB-WindowsWFA.dll
+D:\Github Local REPO\PersonalDB\VS-Solution\PersonalDB-WindowsWFA\bin\Debug\net8.0-windows\PersonalDB-WindowsWFA.pdb
+D:\Github Local REPO\PersonalDB\VS-Solution\PersonalDB-WindowsWFA\obj\Debug\net8.0-windows\PersonalDB_WindowsWFA.Form1.resources
+D:\Github Local REPO\PersonalDB\VS-Solution\PersonalDB-WindowsWFA\obj\Debug\net8.0-windows\PersonalDB-WindowsWFA.csproj.GenerateResource.cache
+D:\Github Local REPO\PersonalDB\VS-Solution\PersonalDB-WindowsWFA\obj\Debug\net8.0-windows\PersonalDB-WindowsWFA.GeneratedMSBuildEditorConfig.editorconfig
+D:\Github Local REPO\PersonalDB\VS-Solution\PersonalDB-WindowsWFA\obj\Debug\net8.0-windows\PersonalDB-WindowsWFA.AssemblyInfoInputs.cache
+D:\Github Local REPO\PersonalDB\VS-Solution\PersonalDB-WindowsWFA\obj\Debug\net8.0-windows\PersonalDB-WindowsWFA.AssemblyInfo.cs
+D:\Github Local REPO\PersonalDB\VS-Solution\PersonalDB-WindowsWFA\obj\Debug\net8.0-windows\PersonalDB-WindowsWFA.csproj.CoreCompileInputs.cache
+D:\Github Local REPO\PersonalDB\VS-Solution\PersonalDB-WindowsWFA\obj\Debug\net8.0-windows\PersonalDB-WindowsWFA.sourcelink.json
+D:\Github Local REPO\PersonalDB\VS-Solution\PersonalDB-WindowsWFA\obj\Debug\net8.0-windows\PersonalDB-WindowsWFA.dll
+D:\Github Local REPO\PersonalDB\VS-Solution\PersonalDB-WindowsWFA\obj\Debug\net8.0-windows\refint\PersonalDB-WindowsWFA.dll
+D:\Github Local REPO\PersonalDB\VS-Solution\PersonalDB-WindowsWFA\obj\Debug\net8.0-windows\PersonalDB-WindowsWFA.pdb
+D:\Github Local REPO\PersonalDB\VS-Solution\PersonalDB-WindowsWFA\obj\Debug\net8.0-windows\PersonalDB-WindowsWFA.genruntimeconfig.cache
+D:\Github Local REPO\PersonalDB\VS-Solution\PersonalDB-WindowsWFA\obj\Debug\net8.0-windows\ref\PersonalDB-WindowsWFA.dll
