@@ -113,7 +113,7 @@
                         <id>default-cli</id>
                         <configuration>
                             <mainClass>
-                                com.myungsuelectronics.personaldbwinjavafx.personaldbwindowsjavafx/com.myungsuelectronics.personaldbwinjavafx.personaldbwindowsjavafx.HelloApplication
+                                com.myungsuelectronics.personaldbwinjavafx.personaldbwindowsjavafx/com.myungsuelectronics.personaldbwinjavafx.personaldbwindowsjavafx.master
                             </mainClass>
                             <launcher>app</launcher>
                             <jlinkZipName>app</jlinkZipName>
