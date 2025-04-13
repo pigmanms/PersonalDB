@@ -1,0 +1,24 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <EditText android:id="@+id/edtLikes" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="좋아하는 것"/>
+        <EditText android:id="@+id/edtDislikes" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="싫어하는 것"/>
+        <EditText android:id="@+id/edtBirthday" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="생일 yyyy-MM-dd" android:inputType="date"/>
+        <EditText android:id="@+id/edtSpeech" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="말투"/>
+        <EditText android:id="@+id/edtPersonality" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="성향"/>
+        <EditText android:id="@+id/edtInterests" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="관심사"/>
+        <EditText android:id="@+id/edtMbti" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="MBTI"/>
+        <MultiAutoCompleteTextView
+            android:id="@+id/edtTags"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="태그 (comma로 구분)"
+            android:inputType="text"/>
+        <Button android:id="@+id/btnSave" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Save"/>
+    </LinearLayout>
+</ScrollView>
