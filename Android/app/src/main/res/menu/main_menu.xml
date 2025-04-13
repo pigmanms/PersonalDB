@@ -1,0 +1,32 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!-- 🔍 검색 -->
+    <item
+        android:id="@+id/action_search"
+        android:title="@string/search"
+        android:icon="@drawable/ic_launcher_background"
+        app:showAsAction="ifRoom|collapseActionView"
+        app:actionViewClass="androidx.appcompat.widget.SearchView" />
+
+    <!-- 📤 전체 내보내기 -->
+    <item
+        android:id="@+id/menuExportAll"
+        android:title="Export All"
+        android:icon="@drawable/ic_launcher_background"
+        app:showAsAction="never" />
+
+    <!-- 📤 단일 내보내기 (선택된 사람) -->
+    <item
+        android:id="@+id/menuExportOne"
+        android:title="Export This Person"
+        android:icon="@drawable/ic_launcher_background"
+        app:showAsAction="never" />
+
+    <!-- 📥 JSON 가져오기 -->
+    <item
+        android:id="@+id/menuImport"
+        android:title="Import JSON"
+        android:icon="@drawable/ic_launcher_background"
+        app:showAsAction="never" />
+</menu>

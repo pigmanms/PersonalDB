@@ -9,6 +9,9 @@
     <uses-permission
         android:name="android.permission.CAMERA"
         tools:ignore="PermissionImpliesUnsupportedChromeOsHardware" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+
+
 
     <application
         android:allowBackup="true"
@@ -31,6 +34,15 @@
             </intent-filter>
         </activity>
         <activity android:name=".AddEditActivity" />
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprov"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
 
     </application>
 

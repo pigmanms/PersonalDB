@@ -5,9 +5,8 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
 class PersonDbHelper(ctx: Context) : SQLiteOpenHelper(ctx, "people.db", null, 2) {
-    override fun onCreate(db: SQLiteDatabase) {
-        createV2(db)
-    }
+    override fun onCreate(db: SQLiteDatabase) = createV2(db)
+
     override fun onUpgrade(db: SQLiteDatabase, oldV: Int, newV: Int) {
         if (oldV == 1) {
             db.execSQL("ALTER TABLE persons ADD COLUMN likes TEXT;")
@@ -22,6 +21,7 @@ class PersonDbHelper(ctx: Context) : SQLiteOpenHelper(ctx, "people.db", null, 2)
             db.execSQL("DROP TABLE IF EXISTS persons"); createV2(db)
         }
     }
+
     private fun createV2(db: SQLiteDatabase) {
         db.execSQL(
             """

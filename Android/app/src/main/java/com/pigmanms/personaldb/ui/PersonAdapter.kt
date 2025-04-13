@@ -1,29 +1,40 @@
 package com.pigmanms.personaldb.ui
 
-import android.content.Context
 import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
+import androidx.recyclerview.widget.RecyclerView
 import com.pigmanms.personaldb.R
 import com.pigmanms.personaldb.model.Person
 
-class PersonAdapter(ctx: Context, private var items: List<Person>) : ArrayAdapter<Person>(ctx, 0, items) {
+class PersonAdapter(private val onClick: (Long) -> Unit) :
+    ListAdapter<Person, PersonAdapter.VH>(DIFF) {
 
-    fun update(newList: List<Person>) { items = newList; notifyDataSetChanged() }
-
-    override fun getCount() = items.size
-    override fun getItem(position: Int) = items[position]
-
-    override fun getView(pos: Int, convert: View?, parent: ViewGroup): View {
-        val v = convert ?: LayoutInflater.from(context).inflate(R.layout.item_person, parent, false)
-        val p = items[pos]
-        v.findViewById<TextView>(R.id.txtName).text = p.name
-        v.findViewById<TextView>(R.id.txtNote).text = "${p.mbti}  ${p.tags.split(",").firstOrNull() ?: ""}"
-        p.photoUri?.let { v.findViewById<ImageView>(R.id.imgPhoto).setImageURI(Uri.parse(it)) }
-        return v
+    companion object {
+        private val DIFF = object : DiffUtil.ItemCallback<Person>() {
+            override fun areItemsTheSame(o: Person, n: Person) = o.id == n.id
+            override fun areContentsTheSame(o: Person, n: Person) = o == n
+        }
     }
+
+    inner class VH(view: View) : RecyclerView.ViewHolder(view) {
+        private val txtName: TextView = view.findViewById(R.id.txtName)
+        private val imgPhoto: ImageView = view.findViewById(R.id.imgPhoto)
+        fun bind(p: Person) {
+            txtName.text = p.name
+            if (p.photoUri != null) imgPhoto.setImageURI(Uri.parse(p.photoUri))
+            else imgPhoto.setImageResource(R.drawable.ic_launcher_background)
+            itemView.setOnClickListener { onClick(p.id) }
+        }
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH =
+        VH(LayoutInflater.from(parent.context).inflate(R.layout.item_person, parent, false))
+
+    override fun onBindViewHolder(holder: VH, position: Int) = holder.bind(getItem(position))
 }

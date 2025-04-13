@@ -8,37 +8,33 @@ import com.pigmanms.personaldb.model.Person
 class PersonDao(ctx: Context) {
     private val helper = PersonDbHelper(ctx)
 
-    /**
-     * Cursor → String helper
-     *  – 컬럼 값이 NULL 이면 빈 문자열 반환해 NPE 를 예방합니다.
-     */
+    // Cursor → String (NULL 안전)
     private fun Cursor.str(col: String): String {
-        val idx = getColumnIndexOrThrow(col)
-        return if (isNull(idx)) "" else getString(idx)
+        val i = getColumnIndexOrThrow(col)
+        return if (isNull(i)) "" else getString(i)
     }
+
+    private fun Cursor.toPerson() = Person(
+        id = getLong(getColumnIndexOrThrow("id")),
+        name = str("name"),
+        photoUri = if (isNull(getColumnIndexOrThrow("photoUri"))) null else getString(getColumnIndexOrThrow("photoUri")),
+        note = str("note"), likes = str("likes"), dislikes = str("dislikes"),
+        birthday = str("birthday"), speech = str("speech"), personality = str("personality"),
+        interests = str("interests"), mbti = str("mbti"), tags = str("tags")
+    )
 
     fun list(): List<Person> = helper.readableDatabase.rawQuery(
         "SELECT * FROM persons ORDER BY name", null
-    ).use { c ->
-        buildList {
-            while (c.moveToNext()) add(
-                Person(
-                    id = c.getLong(c.getColumnIndexOrThrow("id")),
-                    name = c.str("name"),
-                    photoUri = if (c.isNull(c.getColumnIndexOrThrow("photoUri"))) null else c.getString(c.getColumnIndexOrThrow("photoUri")),
-                    note = c.str("note"),
-                    likes = c.str("likes"),
-                    dislikes = c.str("dislikes"),
-                    birthday = c.str("birthday"),
-                    speech = c.str("speech"),
-                    personality = c.str("personality"),
-                    interests = c.str("interests"),
-                    mbti = c.str("mbti"),
-                    tags = c.str("tags")
-                )
-            )
-        }
-    }
+    ).use { c -> buildList { while (c.moveToNext()) add(c.toPerson()) } }
+
+    fun get(id: Long): Person? = helper.readableDatabase.rawQuery(
+        "SELECT * FROM persons WHERE id=?", arrayOf(id.toString())
+    ).use { if (it.moveToFirst()) it.toPerson() else null }
+
+    fun search(keyword: String): List<Person> = helper.readableDatabase.rawQuery(
+        "SELECT * FROM persons WHERE name LIKE ? OR note LIKE ? OR likes LIKE ? OR dislikes LIKE ? OR tags LIKE ? ORDER BY name",
+        Array(5) { "%$keyword%" }
+    ).use { c -> buildList { while (c.moveToNext()) add(c.toPerson()) } }
 
     fun save(p: Person) {
         val v = ContentValues().apply {
