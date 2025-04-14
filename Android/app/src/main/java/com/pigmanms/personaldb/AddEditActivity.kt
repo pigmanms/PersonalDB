@@ -5,7 +5,9 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.*
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
@@ -14,32 +16,46 @@ import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import com.pigmanms.personaldb.db.PersonDao
 import com.pigmanms.personaldb.model.Person
+import com.pigmanms.personaldb.ui.MainViewModel
+
 
 class AddEditActivity : AppCompatActivity() {
 
     private lateinit var dao: PersonDao
     private var photoUri: String? = null
     private var editingId: Long = 0
+    private val viewModel: MainViewModel by viewModels()
+
 
     // 이미지 선택 런처
-    private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-        uri?.let {
-            contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            photoUri = it.toString()
-            // 현재 BasicFragment 가 보이는 경우 즉시 썸네일 반영
-            supportFragmentManager.findFragmentByTag("f0")?.view
-                ?.findViewById<ImageView>(R.id.imgPhoto)?.setImageURI(it)
-        }
+    private val pickImageLauncher = registerForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        uri ?: return@registerForActivityResult
+
+        // 권한을 “영구” 보존 – READ 플래그만 주면 됩니다
+        contentResolver.takePersistableUriPermission(
+            uri,
+            Intent.FLAG_GRANT_READ_URI_PERMISSION
+        )
+
+        photoUri = uri.toString()
+        // BasicFragment 가 열려 있다면 즉시 썸네일 반영
+        supportFragmentManager.findFragmentByTag("f0")
+            ?.view?.findViewById<ImageView>(R.id.imgPhoto)
+            ?.setImageURI(uri)
     }
 
-    /** 외부에서 이미지 피커 호출 */
-    fun launchImagePicker() = pickImageLauncher.launch("image/*")
+    /** 외부에서 호출 */
+    fun launchImagePicker() = pickImageLauncher.launch(
+        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_edit)
         dao = PersonDao(this)
-        editingId = intent.getLongExtra("id", 0)
+        editingId = intent.getLongExtra("personId", 0)
 
         val pager = findViewById<ViewPager2>(R.id.viewPager)
         val tabs = findViewById<TabLayout>(R.id.tabLayout)
@@ -52,6 +68,7 @@ class AddEditActivity : AppCompatActivity() {
             tab.text = if (pos == 0) "기본" else "세부"
         }.attach()
     }
+
 
     // ──────────────────────────────────────────────────────────────────────────────
     //  Static 프래그먼트 (중첩 클래스 ‑ inner 키워드 X)  ────────────────────────────────
@@ -117,6 +134,12 @@ class AddEditActivity : AppCompatActivity() {
             tags = detailRoot.findViewById<EditText>(R.id.edtTags).text.toString()
         )
         dao.save(person)
+        setResult(RESULT_OK)   // ✔ 저장 성공 신호
         finish()
     }
+    override fun onResume() {
+        super.onResume()
+        viewModel.refresh()        // ↓ 아래 3단계 참고 //TODO: FIXTHIS
+    }
+
 }

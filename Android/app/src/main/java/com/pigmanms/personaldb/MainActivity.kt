@@ -8,13 +8,16 @@ import android.view.MenuItem
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
-import androidx.core.content.FileProvider
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.pigmanms.personaldb.db.PersonDao
 import com.pigmanms.personaldb.util.JsonExporter
 import com.pigmanms.personaldb.util.JsonImporter
 import com.pigmanms.personaldb.ui.PersonAdapter
+import androidx.activity.viewModels
+import com.pigmanms.personaldb.ui.MainViewModel
+import com.pigmanms.personaldb.R
+import androidx.recyclerview.widget.LinearLayoutManager
+
 
 class MainActivity : AppCompatActivity() {
     private lateinit var dao: PersonDao
@@ -31,18 +34,30 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val adapter = PersonAdapter { /* 클릭 시 상세 화면 */ }
-        findViewById<RecyclerView>(R.id.recycler).adapter = adapter
+        // 1. 어댑터 인스턴스화
+        adapter = PersonAdapter { id ->
+            startActivity(Intent(this, AddEditActivity::class.java).apply {
+                putExtra("personId", id)     // ← 키 이름 통일!
+            })
+        }
 
-        // LiveData 관찰 → 리스트 갱신
-        viewModel.people.observe(this) { adapter.submitList(it) }
+        // 2. RecyclerView 준비
+        findViewById<RecyclerView>(R.id.recycler).apply {
+            layoutManager = LinearLayoutManager(this@MainActivity)
+            adapter = this@MainActivity.adapter
+        }
+
+        // 3. LiveData 관찰 → 리스트 전달 (어댑터 초기화 이후!)
+        viewModel.people.observe(this) { list ->
+            adapter.submitList(list)
+        }
     }
 
     private fun refresh() = adapter.submitList(dao.list())
 
     // ───────────────────────── 메뉴 ─────────────────────────
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_main, menu)
+        menuInflater.inflate(R.menu.main_menu, menu)
         val searchItem = menu.findItem(R.id.action_search)
         val searchView = searchItem.actionView as SearchView
         searchView.queryHint = "이름·태그·MBTI 등 검색"
@@ -59,10 +74,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
-        R.id.menuExportAll  -> { JsonExporter.exportAll(this); true }
-        R.id.menuExportOne  -> { /* 현재 선택 id 전달 */ true }
-        R.id.menuImport     -> { /* SAF 열어서 JsonImporter.import */ true }
-        else                -> super.onOptionsItemSelected(item)
+        R.id.action_add      -> { startActivity(Intent(this, AddEditActivity::class.java)); true }
+        R.id.menuExportAll   -> { JsonExporter.exportAll(this); true }
+        R.id.menuExportOne   -> { /* 선택 id 전달 */ true }
+        R.id.menuImport      -> { /* SAF → JsonImporter */ true }
+        else                 -> super.onOptionsItemSelected(item)
     }
 
     private fun share(uri: Uri) {
@@ -73,4 +89,8 @@ class MainActivity : AppCompatActivity() {
         }
         startActivity(Intent.createChooser(i, "Export JSON"))
     }
+    private val editLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (it.resultCode == RESULT_OK) viewModel.refresh()   // 🔄 즉시 재조회
+    }
+
 }

@@ -29,7 +29,7 @@ class PersonAdapter(private val onClick: (Long) -> Unit) :
             txtName.text = p.name
             if (p.photoUri != null) imgPhoto.setImageURI(Uri.parse(p.photoUri))
             else imgPhoto.setImageResource(R.drawable.ic_launcher_background)
-            itemView.setOnClickListener { onClick(p.id) }
+            itemView.setOnClickListener { onClick(getItem(position).id) }
         }
     }
 
