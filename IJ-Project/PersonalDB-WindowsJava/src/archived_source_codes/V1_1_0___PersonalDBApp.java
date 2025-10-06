@@ -1,3 +1,5 @@
+package archived_source_codes;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
@@ -7,392 +9,31 @@ import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.ClosedWatchServiceException;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardWatchEventKinds;
-import java.nio.file.WatchEvent;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchService;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
-
-public class PersonalDBApp extends JFrame {
+/**
+ * archived_source_codes.archived_source_codes.V1_1_0___PersonalDBApp — a Windows-friendly Java Swing/AWT desktop app for managing a personal database (SPPD).
+ *
+ * Features implemented:
+ *  - Dynamic schema (user-defined fields). Built-in starter fields for: 사진(image), 특성, 이름, 좋아하는것/싫어하는것/생일/말투/성향/관심사/MBTI 등.
+ *  - Add new custom field types; UI auto-updates, blank shown for all existing people.
+ *  - Export entire DB to JSON, export a single person to JSON; also export entire DB to CSV.
+ *  - Quick search by field/value across DB; compare two people and list common/same attributes.
+ *  - Basic save/load of project using Java serialization (binary .pdb) for fast open/save.
+ *  - Image path field with preview.
+ *
+ * No external libraries required. Compile with: javac archived_source_codes.archived_source_codes.V1_1_0___PersonalDBApp.java
+ * Run with: java archived_source_codes.archived_source_codes.V1_1_0___PersonalDBApp
+ */
+public class V1_1_0___PersonalDBApp extends JFrame {
     private static final String DEFAULT_DATA_DIRECTORY = "C:\\PersonalDB_DATA";
     private static final File DEFAULT_CONFIG_DIRECTORY = new File("C:\\PersonalDB_CONFIG");
     private static final String GLOBAL_SCHEMA_FILE_NAME = "global_schema.psc";
-
-    private static final LanguageManager LANGUAGE_MANAGER = new LanguageManager();
-
-    static {
-        try {
-            ensureDefaultConfigDirectory();
-            ensureDefaultLanguagePacks();
-            LANGUAGE_MANAGER.loadLanguagePacksFromDirectory(DEFAULT_CONFIG_DIRECTORY);
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-        LANGUAGE_MANAGER.setFallbackLanguage("en_US");
-        LANGUAGE_MANAGER.setActiveLanguage("en_US");
-    }
-
-    private static void ensureDefaultConfigDirectory() {
-        if (!DEFAULT_CONFIG_DIRECTORY.exists()) {
-            DEFAULT_CONFIG_DIRECTORY.mkdirs();
-        }
-    }
-
-    private static void ensureDefaultLanguagePacks() throws IOException {
-        writePackIfMissing("en_US_LangPack.json", createLanguagePackJson("en_US", "English (US)", defaultEnglishTranslations()));
-        writePackIfMissing("ko_KR_LangPack.json", createLanguagePackJson("ko_KR", "한국어", defaultKoreanTranslations()));
-        writePackIfMissing("ja_JP_LangPack.json", createLanguagePackJson("ja_JP", "日本語", defaultJapaneseTranslations()));
-    }
-
-    private static void writePackIfMissing(String fileName, String content) throws IOException {
-        File target = new File(DEFAULT_CONFIG_DIRECTORY, fileName);
-        if (target.exists()) {
-            return;
-        }
-        File parent = target.getParentFile();
-        if (parent != null && !parent.exists()) {
-            parent.mkdirs();
-        }
-        Files.writeString(target.toPath(), content, StandardCharsets.UTF_8);
-    }
-
-    private static String createLanguagePackJson(String code, String name, Map<String, String> translations) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("{\n");
-        sb.append("  \"languageCode\": \"").append(escapeJson(code)).append("\",\n");
-        sb.append("  \"languageName\": \"").append(escapeJson(name)).append("\"");
-        for (Map.Entry<String, String> entry : translations.entrySet()) {
-            sb.append(",\n  \"").append(escapeJson(entry.getKey())).append("\": \"")
-                    .append(escapeJson(entry.getValue())).append("\"");
-        }
-        sb.append("\n}\n");
-        return sb.toString();
-    }
-
-    private static Map<String, String> defaultEnglishTranslations() {
-        Map<String, String> translations = new LinkedHashMap<>();
-        translations.put("PersonalDB - Make your own HR", "PersonalDB - Make your own HR");
-        translations.put("File", "File");
-        translations.put("Edit", "Edit");
-        translations.put("Config", "Config");
-        translations.put("Language", "Language");
-        translations.put("Help", "Help");
-        translations.put("+ New Person", "+ New Person");
-        translations.put("Delete", "Delete");
-        translations.put("Search", "Search");
-        translations.put("Compare", "Compare");
-        translations.put("Language changed to %s. The application will restart.", "Language changed to %s. The application will restart.");
-        translations.put("Global schema imported. Restart now?", "Global schema imported. Restart now?");
-        translations.put("Global schema file is missing. Load it now? (requires restart)", "Global schema file is missing. Load it now? (requires restart)");
-        translations.put("Global schema copied into the config folder. The app will restart.", "Global schema copied into the config folder. The app will restart.");
-        return translations;
-    }
-
-    private static Map<String, String> defaultKoreanTranslations() {
-        Map<String, String> translations = new LinkedHashMap<>();
-        translations.put("PersonalDB - Make your own HR", "PersonalDB - 나만의 HR");
-        translations.put("File", "파일");
-        translations.put("Edit", "편집");
-        translations.put("Config", "설정");
-        translations.put("Language", "언어");
-        translations.put("Help", "도움말");
-        translations.put("+ New Person", "+ 새 인물");
-        translations.put("Delete", "삭제");
-        translations.put("Search", "검색");
-        translations.put("Compare", "비교");
-        translations.put("Language changed to %s. The application will restart.", "%s 언어로 변경되었습니다. 프로그램이 다시 시작됩니다.");
-        translations.put("Global schema imported. Restart now?", "글로벌 스키마가 가져와졌습니다. 지금 재시작할까요?");
-        translations.put("Global schema file is missing. Load it now? (requires restart)", "글로벌 스키마 파일이 없습니다. 지금 불러올까요? (재시작 필요)");
-        translations.put("Global schema copied into the config folder. The app will restart.", "글로벌 스키마가 설정 폴더에 복사되었습니다. 프로그램이 다시 시작됩니다.");
-        return translations;
-    }
-
-    private static Map<String, String> defaultJapaneseTranslations() {
-        Map<String, String> translations = new LinkedHashMap<>();
-        translations.put("PersonalDB - Make your own HR", "PersonalDB - 自分だけのHR");
-        translations.put("File", "ファイル");
-        translations.put("Edit", "編集");
-        translations.put("Config", "設定");
-        translations.put("Language", "言語");
-        translations.put("Help", "ヘルプ");
-        translations.put("+ New Person", "+ 新規人物");
-        translations.put("Delete", "削除");
-        translations.put("Search", "検索");
-        translations.put("Compare", "比較");
-        translations.put("Language changed to %s. The application will restart.", "言語が%sに変更されました。アプリケーションが再起動します。");
-        translations.put("Global schema imported. Restart now?", "グローバルスキーマを読み込みました。今すぐ再起動しますか？");
-        translations.put("Global schema file is missing. Load it now? (requires restart)", "グローバルスキーマファイルが見つかりません。今すぐ読み込みますか？(再起動が必要)");
-        translations.put("Global schema copied into the config folder. The app will restart.", "グローバルスキーマを設定フォルダにコピーしました。アプリケーションが再起動します。");
-        return translations;
-    }
-
-    private static String escapeJson(String value) {
-        StringBuilder sb = new StringBuilder();
-        for (char c : value.toCharArray()) {
-            switch (c) {
-                case '\\': sb.append("\\\\"); break;
-                case '"': sb.append("\\\""); break;
-                case '\n': sb.append("\\n"); break;
-                case '\r': sb.append("\\r"); break;
-                case '\t': sb.append("\\t"); break;
-                default:
-                    if (c < 0x20) {
-                        sb.append(String.format(Locale.ROOT, "\\u%04x", (int) c));
-                    } else {
-                        sb.append(c);
-                    }
-            }
-        }
-        return sb.toString();
-    }
-
-    private static String tr(String key) {
-        return LANGUAGE_MANAGER.translate(key);
-    }
-
-    private static String trf(String key, Object... args) {
-        return String.format(Locale.getDefault(), tr(key), args);
-    }
-
-    public static class LanguageManager {
-        private final Map<String, LanguagePack> packs = new LinkedHashMap<>();
-        private LanguagePack fallbackPack;
-        private LanguagePack activePack;
-
-        public synchronized void loadLanguagePacksFromDirectory(File directory) throws IOException {
-            if (directory == null || !directory.exists() || !directory.isDirectory()) return;
-            File[] files = directory.listFiles((dir, name) -> name.endsWith("LangPack.json"));
-            if (files == null) return;
-            for (File file : files) {
-                loadLanguagePack(file);
-            }
-        }
-
-        public synchronized boolean loadLanguagePack(File file) throws IOException {
-            if (file == null || !file.isFile()) return false;
-            String json = Files.readString(file.toPath(), StandardCharsets.UTF_8);
-            Map<String, String> map = SimpleJsonParser.parse(json);
-            if (map.isEmpty()) return false;
-            String code = map.getOrDefault("languageCode", file.getName());
-            String name = map.getOrDefault("languageName", code);
-            Map<String, String> translations = new LinkedHashMap<>(map);
-            translations.remove("languageCode");
-            translations.remove("languageName");
-            LanguagePack pack = new LanguagePack(code, name, translations, file);
-            LanguagePack previous = packs.put(code, pack);
-            if (fallbackPack == null || (previous != null && fallbackPack != null && fallbackPack.code.equals(code))) {
-                fallbackPack = pack;
-            }
-            if (activePack == null || (previous != null && activePack != null && activePack.code.equals(code))) {
-                activePack = pack;
-            }
-            return previous == null;
-        }
-
-        public synchronized void setFallbackLanguage(String code) {
-            if (code == null) return;
-            LanguagePack pack = packs.get(code);
-            if (pack != null) {
-                fallbackPack = pack;
-            }
-        }
-
-        public synchronized boolean setActiveLanguage(String code) {
-            if (code == null) return false;
-            LanguagePack pack = packs.get(code);
-            if (pack != null) {
-                activePack = pack;
-                return true;
-            }
-            return false;
-        }
-
-        public synchronized String translate(String key) {
-            if (key == null) return "";
-            if (activePack != null && activePack.translations.containsKey(key)) {
-                return activePack.translations.get(key);
-            }
-            if (fallbackPack != null && fallbackPack.translations.containsKey(key)) {
-                return fallbackPack.translations.get(key);
-            }
-            return key;
-        }
-
-        public synchronized List<LanguagePack> getAvailablePacks() {
-            return new ArrayList<>(packs.values());
-        }
-
-        public synchronized LanguagePack getActivePack() {
-            return activePack;
-        }
-
-        public synchronized boolean containsPackFromFile(File file) {
-            if (file == null) return false;
-            for (LanguagePack pack : packs.values()) {
-                if (pack.sourceFile != null && pack.sourceFile.equals(file)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
-
-    public static class LanguagePack {
-        public final String code;
-        public final String name;
-        public final Map<String, String> translations;
-        public final File sourceFile;
-
-        public LanguagePack(String code, String name, Map<String, String> translations, File sourceFile) {
-            this.code = code;
-            this.name = name;
-            this.translations = translations;
-            this.sourceFile = sourceFile;
-        }
-    }
-
-    public static class SimpleJsonParser {
-        public static Map<String, String> parse(String json) throws IOException {
-            Map<String, String> map = new LinkedHashMap<>();
-            if (json == null) return map;
-            int[] idx = new int[]{0};
-            skipWhitespace(json, idx);
-            if (!expect(json, idx, '{')) {
-                throw new IOException("Invalid JSON: expected '{'");
-            }
-            skipWhitespace(json, idx);
-            while (idx[0] < json.length()) {
-                if (peek(json, idx) == '}') {
-                    idx[0]++;
-                    break;
-                }
-                String key = parseString(json, idx);
-                skipWhitespace(json, idx);
-                if (!expect(json, idx, ':')) {
-                    throw new IOException("Invalid JSON: expected ':'");
-                }
-                skipWhitespace(json, idx);
-                String value = parseValue(json, idx);
-                map.put(key, value);
-                skipWhitespace(json, idx);
-                char ch = peek(json, idx);
-                if (ch == ',') {
-                    idx[0]++;
-                    skipWhitespace(json, idx);
-                } else if (ch == '}') {
-                    idx[0]++;
-                    break;
-                } else {
-                    throw new IOException("Invalid JSON: expected ',' or '}'");
-                }
-            }
-            return map;
-        }
-
-        private static char peek(String json, int[] idx) {
-            if (idx[0] >= json.length()) return '\0';
-            return json.charAt(idx[0]);
-        }
-
-        private static void skipWhitespace(String json, int[] idx) {
-            while (idx[0] < json.length() && Character.isWhitespace(json.charAt(idx[0]))) {
-                idx[0]++;
-            }
-        }
-
-        private static boolean expect(String json, int[] idx, char expected) {
-            if (idx[0] < json.length() && json.charAt(idx[0]) == expected) {
-                idx[0]++;
-                return true;
-            }
-            return false;
-        }
-
-        private static String parseString(String json, int[] idx) throws IOException {
-            if (!expect(json, idx, '"')) {
-                throw new IOException("Invalid JSON: expected string");
-            }
-            StringBuilder sb = new StringBuilder();
-            while (idx[0] < json.length()) {
-                char c = json.charAt(idx[0]++);
-                if (c == '"') {
-                    return sb.toString();
-                }
-                if (c == '\\') {
-                    if (idx[0] >= json.length()) {
-                        throw new IOException("Invalid JSON escape sequence");
-                    }
-                    char esc = json.charAt(idx[0]++);
-                    switch (esc) {
-                        case '"': sb.append('"'); break;
-                        case '\\': sb.append('\\'); break;
-                        case '/': sb.append('/'); break;
-                        case 'b': sb.append('\b'); break;
-                        case 'f': sb.append('\f'); break;
-                        case 'n': sb.append('\n'); break;
-                        case 'r': sb.append('\r'); break;
-                        case 't': sb.append('\t'); break;
-                        case 'u':
-                            if (idx[0] + 4 > json.length()) {
-                                throw new IOException("Invalid JSON unicode escape");
-                            }
-                            String hex = json.substring(idx[0], idx[0] + 4);
-                            try {
-                                int code = Integer.parseInt(hex, 16);
-                                sb.append((char) code);
-                            } catch (NumberFormatException ex) {
-                                throw new IOException("Invalid JSON unicode escape", ex);
-                            }
-                            idx[0] += 4;
-                            break;
-                        default:
-                            throw new IOException("Invalid JSON escape character: " + esc);
-                    }
-                } else {
-                    sb.append(c);
-                }
-            }
-            throw new IOException("Unterminated string in JSON");
-        }
-
-        private static String parseValue(String json, int[] idx) throws IOException {
-            char ch = peek(json, idx);
-            if (ch == '"') {
-                return parseString(json, idx);
-            }
-            if (ch == 'n' && json.startsWith("null", idx[0])) {
-                idx[0] += 4;
-                return "";
-            }
-            if (ch == 't' && json.startsWith("true", idx[0])) {
-                idx[0] += 4;
-                return "true";
-            }
-            if (ch == 'f' && json.startsWith("false", idx[0])) {
-                idx[0] += 5;
-                return "false";
-            }
-            StringBuilder sb = new StringBuilder();
-            while (idx[0] < json.length()) {
-                ch = json.charAt(idx[0]);
-                if (ch == ',' || ch == '}' || Character.isWhitespace(ch)) {
-                    break;
-                }
-                sb.append(ch);
-                idx[0]++;
-            }
-            return sb.toString().trim();
-        }
-    }
 
     // ---- Model ----
     public enum FieldType implements Serializable { TEXT, LONG_TEXT, NUMBER, BOOLEAN, DATE, LIST, ENUM, IMAGE_PATH }
@@ -462,7 +103,7 @@ public class PersonalDBApp extends JFrame {
         public String displayName(Schema schema) {
             Object v = data.getOrDefault("이름", "");
             String name = v == null ? "" : String.valueOf(v);
-            if (name.isBlank()) return tr("(No Name)");
+            if (name.isBlank()) return "(이름 없음)";
             return name;
         }
     }
@@ -576,7 +217,6 @@ public class PersonalDBApp extends JFrame {
     public static class AppSettings implements Serializable {
         private static final long serialVersionUID = 1L;
         private String dataDirectory = DEFAULT_DATA_DIRECTORY;
-        private String languageCode = "en_US";
 
         public String getDataDirectory() {
             return dataDirectory;
@@ -592,15 +232,6 @@ public class PersonalDBApp extends JFrame {
             ensureDataDirectoryExists();
         }
 
-        public String getLanguageCode() {
-            return languageCode;
-        }
-
-        public void setLanguageCode(String languageCode) {
-            if (languageCode == null || languageCode.isBlank()) return;
-            this.languageCode = languageCode;
-        }
-
         public void ensureDataDirectoryExists() {
             File dir = getDataDirectoryFile();
             if (!dir.exists()) {
@@ -611,7 +242,6 @@ public class PersonalDBApp extends JFrame {
         public void applyFrom(AppSettings other) {
             if (other == null) return;
             setDataDirectory(other.getDataDirectory());
-            setLanguageCode(other.getLanguageCode());
         }
     }
 
@@ -828,44 +458,32 @@ public class PersonalDBApp extends JFrame {
     private final JTable schemaTable = new JTable();
     private final SchemaTableModel schemaTableModel;
 
-    private JMenu languageMenu;
-    private ButtonGroup languageMenuGroup;
-    private WatchService languageWatchService;
-    private Thread languageWatchThread;
-
     private File currentProjectFile = null; // .pdb serialized
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
     private boolean restartScheduled = false;
 
-    public PersonalDBApp() {
-        super(tr("PersonalDB - Make your own HR"));
+    public V1_1_0___PersonalDBApp() {
+        super("PersonalDB - Make your own HR");
         this.db = new PersonalDatabase();
         this.settings = new AppSettings();
-        LanguagePack active = LANGUAGE_MANAGER.getActivePack();
-        if (active != null) {
-            this.settings.setLanguageCode(active.code);
-        }
         seedInitialSchema(db.schema);
         schemaTableModel = new SchemaTableModel();
         buildUI();
         refreshPeopleList();
         SwingUtilities.invokeLater(this::postStartupInitialization);
-        setTitle(tr("PersonalDB - Make your own HR"));
     }
 
     private void postStartupInitialization() {
         settings.ensureDataDirectoryExists();
         ensureConfigDirectoryExists();
-        syncLanguageFromSettings();
-        startLanguagePackWatcher();
         File globalSchemaFile = new File(DEFAULT_CONFIG_DIRECTORY, GLOBAL_SCHEMA_FILE_NAME);
         if (!loadGlobalSchemaFromConfig()) {
             int choice = JOptionPane.showConfirmDialog(this,
-                    tr("Global schema file is missing. Load it now? (requires restart)"),
-                    tr("Global Schema"), JOptionPane.YES_NO_OPTION);
+                    "Global Schema 파일이 없습니다. 지금 불러오시겠습니까? (재시작됨)",
+                    "Global Schema", JOptionPane.YES_NO_OPTION);
             if (choice == JOptionPane.YES_OPTION) {
                 if (importGlobalSchemaIntoConfig(globalSchemaFile)) {
-                    JOptionPane.showMessageDialog(this, tr("Global schema copied into the config folder. The app will restart."));
+                    JOptionPane.showMessageDialog(this, "Global Schema가 설정 폴더에 복사되었습니다. 프로그램을 재시작합니다.");
                     scheduleRestart();
                 }
             }
@@ -873,12 +491,14 @@ public class PersonalDBApp extends JFrame {
     }
 
     private void ensureConfigDirectoryExists() {
-        ensureDefaultConfigDirectory();
+        if (!DEFAULT_CONFIG_DIRECTORY.exists()) {
+            DEFAULT_CONFIG_DIRECTORY.mkdirs();
+        }
     }
 
     private boolean importGlobalSchemaIntoConfig(File destination) {
         JFileChooser fc = new JFileChooser(settings.getDataDirectoryFile());
-        fc.setFileFilter(new FileNameExtensionFilter(tr("PersonalDB Schema (*.psc)"), "psc"));
+        fc.setFileFilter(new FileNameExtensionFilter("PersonalDB Schema (*.psc)", "psc"));
         if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
             return false;
         }
@@ -889,7 +509,7 @@ public class PersonalDBApp extends JFrame {
             applySchemaFromExternal(schema);
             return true;
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, trf("Failed to load schema: %s", ex.getMessage()), tr("Error"), JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "스키마를 불러오지 못했습니다: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
     }
@@ -900,7 +520,7 @@ public class PersonalDBApp extends JFrame {
         SwingUtilities.invokeLater(() -> {
             setVisible(false);
             dispose();
-            PersonalDBApp app = new PersonalDBApp();
+            V1_1_0___PersonalDBApp app = new V1_1_0___PersonalDBApp();
             app.setVisible(true);
         });
     }
@@ -922,7 +542,7 @@ public class PersonalDBApp extends JFrame {
             applySchemaFromExternal(schema);
             return true;
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, trf("Failed to load global schema: %s", ex.getMessage()), tr("Error"), JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "글로벌 스키마를 불러오지 못했습니다: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
     }
@@ -932,8 +552,8 @@ public class PersonalDBApp extends JFrame {
         File dest = new File(DEFAULT_CONFIG_DIRECTORY, GLOBAL_SCHEMA_FILE_NAME);
         if (importGlobalSchemaIntoConfig(dest)) {
             int restart = JOptionPane.showConfirmDialog(this,
-                    tr("Global schema imported. Restart now?"),
-                    tr("Restart"), JOptionPane.YES_NO_OPTION);
+                    "Global Schema를 불러왔습니다. 지금 재시작할까요?",
+                    "Restart", JOptionPane.YES_NO_OPTION);
             if (restart == JOptionPane.YES_OPTION) {
                 scheduleRestart();
             }
@@ -941,29 +561,29 @@ public class PersonalDBApp extends JFrame {
     }
 
     private void exportGlobalSchema() {
-        JFileChooser fc = createFileChooser(tr("PersonalDB Schema (*.psc)"), "psc");
+        JFileChooser fc = createFileChooser("PersonalDB Schema (*.psc)", "psc");
         if (fc.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
             return;
         }
         File target = ensureExt(fc.getSelectedFile(), ".psc");
         try {
             SchemaIO.saveSchema(db.snapshotSchema(), target);
-            JOptionPane.showMessageDialog(this, trf("Global schema exported: %s", target.getAbsolutePath()));
+            JOptionPane.showMessageDialog(this, "Global Schema가 내보내졌습니다: " + target.getAbsolutePath());
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, trf("Failed to export global schema: %s", ex.getMessage()), tr("Error"), JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Global Schema 내보내기 실패: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void chooseDataDirectory() {
         JFileChooser fc = new JFileChooser(settings.getDataDirectoryFile());
         fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-        fc.setDialogTitle(tr("Select Data Directory"));
+        fc.setDialogTitle("Select Data Directory");
         if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
             return;
         }
         File dir = fc.getSelectedFile();
         settings.setDataDirectory(dir.getAbsolutePath());
-        JOptionPane.showMessageDialog(this, trf("Data directory changed to: %s", dir.getAbsolutePath()));
+        JOptionPane.showMessageDialog(this, "데이터 저장 위치가 변경되었습니다: " + dir.getAbsolutePath());
     }
 
     private void seedInitialSchema(Schema s) {
@@ -1006,17 +626,17 @@ public class PersonalDBApp extends JFrame {
         peopleList.addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) buildDetailsForm(peopleList.getSelectedValue());
         });
-        JButton addBtn = new JButton(tr("+ New Person"));
+        JButton addBtn = new JButton("+ 새 인물");
         addBtn.addActionListener(e -> {
             PersonRecord p = db.addPerson();
             peopleListModel.addElement(p);
             peopleList.setSelectedValue(p, true);
         });
-        JButton delBtn = new JButton(tr("Delete"));
+        JButton delBtn = new JButton("삭제");
         delBtn.addActionListener(e -> {
             PersonRecord sel = peopleList.getSelectedValue();
             if (sel == null) return;
-            int c = JOptionPane.showConfirmDialog(this, tr("Are you sure you want to delete this record?"), tr("Confirm"), JOptionPane.YES_NO_OPTION);
+            int c = JOptionPane.showConfirmDialog(this, "정말 삭제하시겠습니까?", "Confirm", JOptionPane.YES_NO_OPTION);
             if (c == JOptionPane.YES_OPTION) {
                 db.deletePerson(sel);
                 peopleListModel.removeElement(sel);
@@ -1034,9 +654,9 @@ public class PersonalDBApp extends JFrame {
 
         // Right tabs
         JTabbedPane tabs = new JTabbedPane();
-        tabs.addTab(tr("Details"), detailsScroll);
-        tabs.addTab(tr("Search / Compare"), buildSearchComparePanel());
-        tabs.addTab(tr("Schema"), buildSchemaPanel());
+        tabs.addTab("Details", detailsScroll);
+        tabs.addTab("Search/Compare", buildSearchComparePanel());
+        tabs.addTab("Schema", buildSchemaPanel());
 
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, tabs);
         split.setDividerLocation(280);
@@ -1048,198 +668,58 @@ public class PersonalDBApp extends JFrame {
 
     private JMenuBar buildMenuBar() {
         JMenuBar mb = new JMenuBar();
-        JMenu file = new JMenu(tr("File"));
-        JMenuItem miNew = new JMenuItem(tr("New Project"));
+        JMenu file = new JMenu("File");
+        JMenuItem miNew = new JMenuItem("New Project");
         miNew.addActionListener(e -> newProject());
-        JMenuItem miOpen = new JMenuItem(tr("Open Project (.pdb)"));
+        JMenuItem miOpen = new JMenuItem("Open Project (.pdb)");
         miOpen.addActionListener(e -> openProject());
-        JMenuItem miSave = new JMenuItem(tr("Save Project"));
+        JMenuItem miSave = new JMenuItem("Save Project");
         miSave.addActionListener(e -> saveProject(false));
-        JMenuItem miSaveAs = new JMenuItem(tr("Save Project As..."));
+        JMenuItem miSaveAs = new JMenuItem("Save Project As...");
         miSaveAs.addActionListener(e -> saveProject(true));
-        JMenuItem miExportAllJson = new JMenuItem(tr("Export ALL to JSON..."));
+        JMenuItem miExportAllJson = new JMenuItem("Export ALL to JSON...");
         miExportAllJson.addActionListener(e -> exportAllJson());
-        JMenuItem miExportOneJson = new JMenuItem(tr("Export SELECTED to JSON..."));
+        JMenuItem miExportOneJson = new JMenuItem("Export SELECTED to JSON...");
         miExportOneJson.addActionListener(e -> exportOneJson());
-        JMenuItem miExportCsv = new JMenuItem(tr("Export ALL to CSV..."));
+        JMenuItem miExportCsv = new JMenuItem("Export ALL to CSV...");
         miExportCsv.addActionListener(e -> exportAllCsv());
-        JMenuItem miExit = new JMenuItem(tr("Exit"));
+        JMenuItem miExit = new JMenuItem("Exit");
         miExit.addActionListener(e -> dispose());
         file.add(miNew); file.add(miOpen); file.addSeparator(); file.add(miSave); file.add(miSaveAs); file.addSeparator();
         file.add(miExportAllJson); file.add(miExportOneJson); file.add(miExportCsv); file.addSeparator(); file.add(miExit);
 
-        JMenu edit = new JMenu(tr("Edit"));
-        JMenuItem miAddField = new JMenuItem(tr("Add Field"));
+        JMenu edit = new JMenu("Edit");
+        JMenuItem miAddField = new JMenuItem("Add Field");
         miAddField.addActionListener(e -> addFieldDialog());
-        JMenuItem miRemoveField = new JMenuItem(tr("Remove Field"));
+        JMenuItem miRemoveField = new JMenuItem("Remove Field");
         miRemoveField.addActionListener(e -> removeFieldDialog());
         edit.add(miAddField); edit.add(miRemoveField);
 
-        JMenu help = new JMenu(tr("Help"));
-        JMenuItem miAbout = new JMenuItem(tr("About"));
+        JMenu help = new JMenu("Help");
+        JMenuItem miAbout = new JMenuItem("About");
         miAbout.addActionListener(e -> JOptionPane.showMessageDialog(this,
-                tr("Establish your Personal Database! - PersonalDB") + "\n" +
-                        tr("• Dynamic custom fields") + "\n" +
-                        tr("• Export as JSON / CSV") + "\n" +
-                        tr("• Quick search & compare") + "\n\n" +
-                        tr("Copyright 2025~sometime in the future") + "\n" +
-                        tr("MyungSu(a.k.a. Plutrious, Pigman_MS, Tensor) & Codex"),
-                tr("About"), JOptionPane.INFORMATION_MESSAGE));
+                "Establish your Personal Database! - PersonalDB\n" +
+                        "• Dynamic custom fields\n" +
+                        "• Export as JSON / CSV\n" +
+                        "• Quick search & compare\n\n" +
+                        "Copyright 2025~sometime in the future\n" +
+                        "MyungSu(a.k.a. Plutrious, Pigman_MS, Tensor) & Codex",
+                "About", JOptionPane.INFORMATION_MESSAGE));
         help.add(miAbout);
 
-        JMenu config = new JMenu(tr("Config"));
-        JMenuItem miSetDataDir = new JMenuItem(tr("Set Data Directory..."));
+        JMenu config = new JMenu("Config");
+        JMenuItem miSetDataDir = new JMenuItem("Set Data Directory...");
         miSetDataDir.addActionListener(e -> chooseDataDirectory());
-        JMenuItem miImportGlobal = new JMenuItem(tr("Import Global Schema (.psc)..."));
+        JMenuItem miImportGlobal = new JMenuItem("Import Global Schema (.psc)...");
         miImportGlobal.addActionListener(e -> importGlobalSchemaFromMenu());
-        JMenuItem miExportGlobal = new JMenuItem(tr("Export Current Schema (.psc)..."));
+        JMenuItem miExportGlobal = new JMenuItem("Export Current Schema (.psc)...");
         miExportGlobal.addActionListener(e -> exportGlobalSchema());
         config.add(miSetDataDir);
         config.add(miImportGlobal);
         config.add(miExportGlobal);
 
-        languageMenu = new JMenu(tr("Language"));
-        rebuildLanguageMenuItems();
-
-        mb.add(file); mb.add(edit); mb.add(config); mb.add(languageMenu); mb.add(help);
+        mb.add(file); mb.add(edit); mb.add(config); mb.add(help);
         return mb;
-    }
-
-    private void rebuildLanguageMenuItems() {
-        if (languageMenu == null) {
-            return;
-        }
-        languageMenu.setText(tr("Language"));
-        languageMenu.removeAll();
-        languageMenuGroup = new ButtonGroup();
-        LanguagePack active = LANGUAGE_MANAGER.getActivePack();
-        for (LanguagePack pack : LANGUAGE_MANAGER.getAvailablePacks()) {
-            final LanguagePack targetPack = pack;
-            boolean selected = active != null && active.code.equals(targetPack.code);
-            JRadioButtonMenuItem item = new JRadioButtonMenuItem(targetPack.name, selected);
-            item.addActionListener(e -> {
-                if (LANGUAGE_MANAGER.setActiveLanguage(targetPack.code)) {
-                    settings.setLanguageCode(targetPack.code);
-                    JOptionPane.showMessageDialog(this, trf("Language changed to %s. The application will restart.", targetPack.name));
-                    scheduleRestart();
-                }
-            });
-            languageMenuGroup.add(item);
-            languageMenu.add(item);
-        }
-        languageMenu.revalidate();
-        languageMenu.repaint();
-    }
-
-    private void startLanguagePackWatcher() {
-        stopLanguagePackWatcher();
-        if (!DEFAULT_CONFIG_DIRECTORY.exists()) {
-            return;
-        }
-        try {
-            languageWatchService = FileSystems.getDefault().newWatchService();
-            Path path = DEFAULT_CONFIG_DIRECTORY.toPath();
-            path.register(languageWatchService, StandardWatchEventKinds.ENTRY_CREATE);
-            languageWatchThread = new Thread(this::processLanguageWatchEvents, "LanguagePackWatcher");
-            languageWatchThread.setDaemon(true);
-            languageWatchThread.start();
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-    }
-
-    private void processLanguageWatchEvents() {
-        if (languageWatchService == null) {
-            return;
-        }
-        while (true) {
-            WatchKey key;
-            try {
-                key = languageWatchService.take();
-            } catch (InterruptedException ex) {
-                Thread.currentThread().interrupt();
-                break;
-            } catch (ClosedWatchServiceException ex) {
-                break;
-            }
-            for (WatchEvent<?> event : key.pollEvents()) {
-                WatchEvent.Kind<?> kind = event.kind();
-                if (kind != StandardWatchEventKinds.ENTRY_CREATE) {
-                    continue;
-                }
-                @SuppressWarnings("unchecked")
-                WatchEvent<Path> ev = (WatchEvent<Path>) event;
-                Path filename = ev.context();
-                if (filename == null) {
-                    continue;
-                }
-                if (!filename.toString().endsWith("LangPack.json")) {
-                    continue;
-                }
-                Path resolved = DEFAULT_CONFIG_DIRECTORY.toPath().resolve(filename);
-                handleLanguagePackFileCreated(resolved.toFile());
-            }
-            boolean valid = key.reset();
-            if (!valid) {
-                break;
-            }
-        }
-    }
-
-    private void handleLanguagePackFileCreated(File file) {
-        if (file == null) {
-            return;
-        }
-        try {
-            Thread.sleep(200);
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            return;
-        }
-        boolean loaded;
-        try {
-            LANGUAGE_MANAGER.loadLanguagePack(file);
-            loaded = LANGUAGE_MANAGER.containsPackFromFile(file);
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            return;
-        }
-        if (!loaded) {
-            return;
-        }
-        SwingUtilities.invokeLater(() -> {
-            rebuildLanguageMenuItems();
-            JOptionPane.showMessageDialog(PersonalDBApp.this, "새로운 언어팩이 감지되었습니다.");
-        });
-    }
-
-    private void stopLanguagePackWatcher() {
-        if (languageWatchThread != null) {
-            languageWatchThread.interrupt();
-            languageWatchThread = null;
-        }
-        if (languageWatchService != null) {
-            try {
-                languageWatchService.close();
-            } catch (IOException ignored) {
-            }
-            languageWatchService = null;
-        }
-    }
-
-    private void syncLanguageFromSettings() {
-        String code = settings.getLanguageCode();
-        if (!LANGUAGE_MANAGER.setActiveLanguage(code)) {
-            LANGUAGE_MANAGER.setActiveLanguage("en_US");
-            settings.setLanguageCode("en_US");
-        }
-        rebuildLanguageMenuItems();
-    }
-
-    @Override
-    public void dispose() {
-        stopLanguagePackWatcher();
-        super.dispose();
     }
 
     private JPanel buildSearchComparePanel() {
@@ -1249,27 +729,17 @@ public class PersonalDBApp extends JFrame {
         GridBagConstraints gc = new GridBagConstraints();
         gc.insets = new Insets(4,4,4,4);
         gc.gridx=0; gc.gridy=0; gc.anchor=GridBagConstraints.WEST;
-        top.add(new JLabel(tr("Field")), gc);
+        top.add(new JLabel("Field"), gc);
         gc.gridx=1; gc.weightx=1; gc.fill=GridBagConstraints.HORIZONTAL;
-        searchFieldCombo.setPrototypeDisplayValue(tr("Interests................................"));
+        searchFieldCombo.setPrototypeDisplayValue("관심사................................");
         refreshSearchFieldCombo();
-        searchFieldCombo.setRenderer(new DefaultListCellRenderer() {
-            @Override
-            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-                JLabel lbl = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                if (value instanceof String) {
-                    lbl.setText(tr((String) value));
-                }
-                return lbl;
-            }
-        });
         top.add(searchFieldCombo, gc);
         gc.gridx=0; gc.gridy=1; gc.weightx=0; gc.fill=GridBagConstraints.NONE;
-        top.add(new JLabel(tr("Value")), gc);
+        top.add(new JLabel("Value"), gc);
         gc.gridx=1; gc.weightx=1; gc.fill=GridBagConstraints.HORIZONTAL;
         top.add(searchValueField, gc);
         gc.gridx=2; gc.weightx=0; gc.fill=GridBagConstraints.NONE;
-        JButton btnSearch = new JButton(tr("Search"));
+        JButton btnSearch = new JButton("Search");
         btnSearch.addActionListener(e -> doSearch());
         top.add(btnSearch, gc);
 
@@ -1286,13 +756,13 @@ public class PersonalDBApp extends JFrame {
         center.add(new JScrollPane(searchResultsList), BorderLayout.CENTER);
 
         JPanel comparePanel = new JPanel(new GridBagLayout());
-        comparePanel.setBorder(BorderFactory.createTitledBorder(tr("Compare two people")));
+        comparePanel.setBorder(BorderFactory.createTitledBorder("Compare two people"));
         GridBagConstraints c2 = new GridBagConstraints(); c2.insets = new Insets(4,4,4,4);
-        c2.gridx=0; c2.gridy=0; comparePanel.add(new JLabel(tr("A:")), c2);
+        c2.gridx=0; c2.gridy=0; comparePanel.add(new JLabel("A:"), c2);
         c2.gridx=1; c2.weightx=1; c2.fill=GridBagConstraints.HORIZONTAL; refreshCompareCombos(); comparePanel.add(compareA, c2);
-        c2.gridx=0; c2.gridy=1; c2.weightx=0; c2.fill=GridBagConstraints.NONE; comparePanel.add(new JLabel(tr("B:")), c2);
+        c2.gridx=0; c2.gridy=1; c2.weightx=0; c2.fill=GridBagConstraints.NONE; comparePanel.add(new JLabel("B:"), c2);
         c2.gridx=1; c2.weightx=1; c2.fill=GridBagConstraints.HORIZONTAL; comparePanel.add(compareB, c2);
-        JButton btnCompare = new JButton(tr("Compare"));
+        JButton btnCompare = new JButton("Compare");
         btnCompare.addActionListener(e -> doCompare());
         c2.gridx=2; c2.gridy=0; c2.gridheight=2; c2.fill=GridBagConstraints.VERTICAL; comparePanel.add(btnCompare, c2);
 
@@ -1315,10 +785,10 @@ public class PersonalDBApp extends JFrame {
         schemaTable.setModel(schemaTableModel);
         panel.add(new JScrollPane(schemaTable), BorderLayout.CENTER);
         JPanel btns = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JButton add = new JButton(tr("Add Field")); add.addActionListener(e -> addFieldDialog());
-        JButton remove = new JButton(tr("Remove Field")); remove.addActionListener(e -> removeFieldDialog());
-        JButton up = new JButton(tr("Move Up")); up.addActionListener(e -> moveSelectedField(-1));
-        JButton down = new JButton(tr("Move Down")); down.addActionListener(e -> moveSelectedField(1));
+        JButton add = new JButton("Add Field"); add.addActionListener(e -> addFieldDialog());
+        JButton remove = new JButton("Remove Field"); remove.addActionListener(e -> removeFieldDialog());
+        JButton up = new JButton("Move Up"); up.addActionListener(e -> moveSelectedField(-1));
+        JButton down = new JButton("Move Down"); down.addActionListener(e -> moveSelectedField(1));
         btns.add(add); btns.add(remove);
         btns.add(up); btns.add(down);
         panel.add(btns, BorderLayout.NORTH);
@@ -1374,19 +844,18 @@ public class PersonalDBApp extends JFrame {
     private void doCompare() {
         PersonRecord a = (PersonRecord) compareA.getSelectedItem();
         PersonRecord b = (PersonRecord) compareB.getSelectedItem();
-        if (a == null || b == null || a == b) { compareOut.setText(tr("Select two different people to compare.")); return; }
+        if (a == null || b == null || a == b) { compareOut.setText("두 사람을 선택하세요 (서로 달라야 합니다)."); return; }
         Map<String, CompareResult> cmp = db.comparePeople(a, b);
         StringBuilder sb = new StringBuilder();
-        sb.append(tr("[Common / Same Attributes]")); sb.append("\n");
+        sb.append("[공통/동일 속성]\n");
         for (CompareResult r : cmp.values()) {
             if (r.type == FieldType.LIST) {
-                if (!r.overlap.isBlank()) sb.append(" • ").append(tr(r.fieldName)).append(": ").append(tr("[Overlap]"))
-                        .append(" ").append(r.overlap).append("\n");
+                if (!r.overlap.isBlank()) sb.append(" • ").append(r.fieldName).append(": [교집합] ").append(r.overlap).append("\n");
             } else if (r.same && r.aValue != null && !String.valueOf(r.aValue).isBlank()) {
-                sb.append(" • ").append(tr(r.fieldName)).append(": ").append(r.aValue).append("\n");
+                sb.append(" • ").append(r.fieldName).append(": ").append(r.aValue).append("\n");
             }
         }
-        sb.append("\n").append(tr("[Differences]")); sb.append("\n");
+        sb.append("\n[차이점]\n");
         for (CompareResult r : cmp.values()) {
             if (r.type == FieldType.LIST) {
                 // Show A-only / B-only
@@ -1395,25 +864,13 @@ public class PersonalDBApp extends JFrame {
                 Set<String> onlyA = new LinkedHashSet<>(sa); onlyA.removeAll(sbB);
                 Set<String> onlyB = new LinkedHashSet<>(sbB); onlyB.removeAll(sa);
                 if (!onlyA.isEmpty() || !onlyB.isEmpty()) {
-                    sb.append(" • ").append(tr(r.fieldName)).append(": ")
-                            .append(tr("A"))
-                            .append("[").append(String.join("; ", onlyA)).append("] ")
-                            .append(tr("vs"))
-                            .append(" ")
-                            .append(tr("B"))
-                            .append("[").append(String.join("; ", onlyB)).append("]\n");
+                    sb.append(" • ").append(r.fieldName).append(": A[").append(String.join("; ", onlyA)).append("] vs B[").append(String.join("; ", onlyB)).append("]\n");
                 }
             } else {
                 String va = r.aValue==null?"":String.valueOf(r.aValue);
                 String vb = r.bValue==null?"":String.valueOf(r.bValue);
                 if (!Objects.equals(va, vb) && (!va.isBlank() || !vb.isBlank())) {
-                    sb.append(" • ").append(tr(r.fieldName)).append(": ")
-                            .append(tr("A"))
-                            .append("[").append(va).append("] ")
-                            .append(tr("vs"))
-                            .append(" ")
-                            .append(tr("B"))
-                            .append("[").append(vb).append("]\n");
+                    sb.append(" • ").append(r.fieldName).append(": A[").append(va).append("] vs B[").append(vb).append("]\n");
                 }
             }
         }
@@ -1442,7 +899,7 @@ public class PersonalDBApp extends JFrame {
 
         for (FieldDefinition f : db.schema.fields) {
             gc.gridx = 0; gc.gridy = row; gc.weightx=0; gc.fill=GridBagConstraints.NONE;
-            JLabel label = new JLabel(tr(f.name));
+            JLabel label = new JLabel(f.name);
             detailsForm.add(label, gc);
 
             gc.gridx = 1; gc.gridy = row; gc.weightx=1; gc.fill=GridBagConstraints.HORIZONTAL;
@@ -1456,7 +913,7 @@ public class PersonalDBApp extends JFrame {
         }
 
         JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton saveBtn = new JButton(tr("Save (selected person)"));
+        JButton saveBtn = new JButton("저장(선택 인물)");
         saveBtn.addActionListener(e -> {
             if (p != null) {
                 applyEditorsToRecord(p, editors);
@@ -1464,7 +921,7 @@ public class PersonalDBApp extends JFrame {
                 peopleList.repaint();
             }
         });
-        JButton exportOne = new JButton(tr("Export (JSON; selected person)"));
+        JButton exportOne = new JButton("내보내기(JSON; 선택 인물)");
         exportOne.addActionListener(e -> exportOneJson());
         btns.add(saveBtn); btns.add(exportOne);
 
@@ -1496,7 +953,7 @@ public class PersonalDBApp extends JFrame {
             }
             case NUMBER: {
                 JTextField tf = new JTextField(current==null?"":String.valueOf(current));
-                tf.setToolTipText(tr("Enter a number"));
+                tf.setToolTipText("숫자 입력");
                 return tf;
             }
             case BOOLEAN: {
@@ -1508,7 +965,7 @@ public class PersonalDBApp extends JFrame {
                 JPanel p = new JPanel(new BorderLayout());
                 JTextField tf = new JTextField(current==null?"":String.valueOf(current));
                 tf.setToolTipText("yyyy-MM-dd");
-                JButton today = new JButton(tr("Today"));
+                JButton today = new JButton("오늘");
                 today.addActionListener(e -> tf.setText(new SimpleDateFormat("yyyy-MM-dd").format(new Date())));
                 p.add(tf, BorderLayout.CENTER); p.add(today, BorderLayout.EAST);
                 return p;
@@ -1528,7 +985,7 @@ public class PersonalDBApp extends JFrame {
                 return buildImagePicker(current);
             }
         }
-        return new JLabel(tr("Unsupported"));
+        return new JLabel("Unsupported");
     }
 
     private JComponent buildListEditor(Object current) {
@@ -1541,9 +998,9 @@ public class PersonalDBApp extends JFrame {
         list.setVisibleRowCount(4);
         JScrollPane sp = new JScrollPane(list);
         JTextField input = new JTextField();
-        JButton add = new JButton(tr("Add"));
+        JButton add = new JButton("추가");
         add.addActionListener(e -> { String t = input.getText(); if (!t.isBlank()) { model.addElement(t); input.setText(""); }});
-        JButton remove = new JButton(tr("Delete"));
+        JButton remove = new JButton("삭제");
         remove.addActionListener(e -> { int idx = list.getSelectedIndex(); if (idx>=0) model.remove(idx); });
         JPanel controls = new JPanel(new BorderLayout());
         controls.add(input, BorderLayout.CENTER);
@@ -1561,10 +1018,10 @@ public class PersonalDBApp extends JFrame {
         JPanel panel = new JPanel(new BorderLayout());
         JLabel preview = new JLabel(); preview.setPreferredSize(new Dimension(120, 120)); preview.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY)); preview.setHorizontalAlignment(SwingConstants.CENTER);
         JTextField pathField = new JTextField(current==null?"":String.valueOf(current));
-        JButton choose = new JButton(tr("Browse..."));
+        JButton choose = new JButton("파일...");
         choose.addActionListener(e -> {
             JFileChooser fc = new JFileChooser();
-            fc.setFileFilter(new FileNameExtensionFilter(tr("Images"), "png","jpg","jpeg","gif","bmp"));
+            fc.setFileFilter(new FileNameExtensionFilter("Images", "png","jpg","jpeg","gif","bmp"));
             if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
                 File f = fc.getSelectedFile();
                 pathField.setText(f.getAbsolutePath());
@@ -1586,7 +1043,7 @@ public class PersonalDBApp extends JFrame {
     }
 
     private void setPreviewImage(JLabel lbl, File f) {
-        if (f == null || !f.exists()) { lbl.setIcon(null); lbl.setText(tr("No preview")); return; }
+        if (f == null || !f.exists()) { lbl.setIcon(null); lbl.setText("미리보기 없음"); return; }
         try {
             ImageIcon icon = new ImageIcon(f.getAbsolutePath());
             Image img = icon.getImage();
@@ -1594,7 +1051,7 @@ public class PersonalDBApp extends JFrame {
             Image scaled = img.getScaledInstance(w, h, Image.SCALE_SMOOTH);
             lbl.setText("");
             lbl.setIcon(new ImageIcon(scaled));
-        } catch (Exception ex) { lbl.setText(tr("Image error")); }
+        } catch (Exception ex) { lbl.setText("이미지 오류"); }
     }
 
     private Object readEditorValue(FieldDefinition f, JComponent ed) {
@@ -1666,15 +1123,15 @@ public class PersonalDBApp extends JFrame {
     private void addFieldDialog() {
         JTextField name = new JTextField();
         JComboBox<FieldType> type = new JComboBox<>(FieldType.values());
-        JTextField enumOpts = new JTextField(); enumOpts.setToolTipText(tr("Comma separated values for ENUM"));
+        JTextField enumOpts = new JTextField(); enumOpts.setToolTipText("ENUM일 때 ,로 옵션 구분");
         JPanel p = new JPanel(new GridLayout(0,1,6,6));
-        p.add(new JLabel(tr("Field name"))); p.add(name);
-        p.add(new JLabel(tr("Type"))); p.add(type);
-        p.add(new JLabel(tr("ENUM options (comma separated)"))); p.add(enumOpts);
-        int ok = JOptionPane.showConfirmDialog(this, p, tr("Add Field"), JOptionPane.OK_CANCEL_OPTION);
+        p.add(new JLabel("필드명")); p.add(name);
+        p.add(new JLabel("타입")); p.add(type);
+        p.add(new JLabel("ENUM 옵션(쉼표로 구분)")); p.add(enumOpts);
+        int ok = JOptionPane.showConfirmDialog(this, p, "Add Field", JOptionPane.OK_CANCEL_OPTION);
         if (ok == JOptionPane.OK_OPTION) {
             String nm = name.getText().trim();
-            if (nm.isBlank()) { JOptionPane.showMessageDialog(this, tr("Please enter a field name")); return; }
+            if (nm.isBlank()) { JOptionPane.showMessageDialog(this, "필드명을 입력하세요"); return; }
             FieldDefinition fd = new FieldDefinition(nm, (FieldType) type.getSelectedItem());
             if (fd.type == FieldType.ENUM) {
                 if (!enumOpts.getText().isBlank()) fd.enumOptions = Arrays.stream(enumOpts.getText().split(",")).map(String::trim).filter(s->!s.isBlank()).collect(Collectors.toList());
@@ -1686,16 +1143,16 @@ public class PersonalDBApp extends JFrame {
                 refreshSearchFieldCombo();
                 buildDetailsForm(peopleList.getSelectedValue());
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, ex.getMessage(), tr("Error"), JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
     private void removeFieldDialog() {
         List<String> names = db.schema.fieldNames();
-        String sel = (String) JOptionPane.showInputDialog(this, tr("Select a field to remove"), tr("Remove Field"), JOptionPane.PLAIN_MESSAGE, null, names.toArray(), null);
+        String sel = (String) JOptionPane.showInputDialog(this, "삭제할 필드 선택", "Remove Field", JOptionPane.PLAIN_MESSAGE, null, names.toArray(), null);
         if (sel == null) return;
-        int c = JOptionPane.showConfirmDialog(this, trf("Delete field '%s'? This will remove it from all data.", sel), tr("Confirm"), JOptionPane.YES_NO_OPTION);
+        int c = JOptionPane.showConfirmDialog(this, "필드 '"+sel+"' 를 삭제합니까? 모든 데이터에서도 제거됩니다.", "Confirm", JOptionPane.YES_NO_OPTION);
         if (c == JOptionPane.YES_OPTION) {
             db.schema.removeField(sel);
             for (PersonRecord p : db.people) p.data.remove(sel);
@@ -1711,7 +1168,7 @@ public class PersonalDBApp extends JFrame {
 
         @Override public int getRowCount() { return db.schema.fields.size(); }
         @Override public int getColumnCount() { return cols.length; }
-        @Override public String getColumnName(int c){ return tr(cols[c]); }
+        @Override public String getColumnName(int c){ return cols[c]; }
         @Override public Object getValueAt(int r, int c) {
             FieldDefinition f = db.schema.fields.get(r);
             switch (c) {
@@ -1729,7 +1186,7 @@ public class PersonalDBApp extends JFrame {
                 if (newName.isBlank() || newName.equals(f.name)) return;
                 FieldDefinition existing = db.schema.getField(newName);
                 if (existing != null && existing != f) {
-                    JOptionPane.showMessageDialog(PersonalDBApp.this, tr("Field name already exists."));
+                    JOptionPane.showMessageDialog(V1_1_0___PersonalDBApp.this, "이미 존재하는 필드 이름입니다.");
                     return;
                 }
                 String oldName = f.name;
@@ -1755,7 +1212,7 @@ public class PersonalDBApp extends JFrame {
 
     // --- Project save/open ---
     private void newProject() {
-        int c = JOptionPane.showConfirmDialog(this, tr("Would you like to save the current project?"), tr("New"), JOptionPane.YES_NO_CANCEL_OPTION);
+        int c = JOptionPane.showConfirmDialog(this, "현재 프로젝트를 저장하시겠습니까?", "New", JOptionPane.YES_NO_CANCEL_OPTION);
         if (c == JOptionPane.CANCEL_OPTION) return;
         if (c == JOptionPane.YES_OPTION) saveProject(false);
         db.people.clear();
@@ -1770,7 +1227,7 @@ public class PersonalDBApp extends JFrame {
     }
 
     private void openProject() {
-        JFileChooser fc = createFileChooser(tr("Personal DB (*.pdb)"), "pdb");
+        JFileChooser fc = createFileChooser("Personal DB (*.pdb)", "pdb");
         if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             File f = fc.getSelectedFile();
             try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(f))) {
@@ -1785,12 +1242,12 @@ public class PersonalDBApp extends JFrame {
                     state.settings = settings;
                     applyLoadedState(state);
                 } else {
-                    throw new IOException(tr("Unknown project format."));
+                    throw new IOException("알 수 없는 프로젝트 형식입니다.");
                 }
                 currentProjectFile = f;
-                JOptionPane.showMessageDialog(this, trf("Loaded %s", f.getName()));
+                JOptionPane.showMessageDialog(this, "Loaded " + f.getName());
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, trf("Failed to open: %s", ex.getMessage()), tr("Error"), JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Failed to open: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -1798,7 +1255,7 @@ public class PersonalDBApp extends JFrame {
     private void saveProject(boolean saveAs) {
         File target = currentProjectFile;
         if (saveAs || target == null) {
-            JFileChooser fc = createFileChooser(tr("Personal DB (*.pdb)"), "pdb");
+            JFileChooser fc = createFileChooser("Personal DB (*.pdb)", "pdb");
             if (fc.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) return;
             target = ensureExt(fc.getSelectedFile(), ".pdb");
         }
@@ -1806,36 +1263,36 @@ public class PersonalDBApp extends JFrame {
             AppState state = new AppState(db, settings);
             oos.writeObject(state);
             currentProjectFile = target;
-            JOptionPane.showMessageDialog(this, trf("Saved to %s", target.getName()));
+            JOptionPane.showMessageDialog(this, "Saved to " + target.getName());
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, trf("Failed to save: %s", ex.getMessage()), tr("Error"), JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Failed to save: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void exportAllJson() {
-        JFileChooser fc = createFileChooser(tr("JSON (*.json)"), "json");
+        JFileChooser fc = createFileChooser("JSON (*.json)", "json");
         if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
             File f = ensureExt(fc.getSelectedFile(), ".json");
-            try { db.exportAllToJson(f); JOptionPane.showMessageDialog(this, trf("Exported: %s", f.getAbsolutePath())); }
-            catch (Exception ex) { JOptionPane.showMessageDialog(this, ex.getMessage(), tr("Error"), JOptionPane.ERROR_MESSAGE); }
+            try { db.exportAllToJson(f); JOptionPane.showMessageDialog(this, "Exported: " + f.getAbsolutePath()); }
+            catch (Exception ex) { JOptionPane.showMessageDialog(this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE); }
         }
     }
     private void exportOneJson() {
         PersonRecord sel = peopleList.getSelectedValue();
-        if (sel == null) { JOptionPane.showMessageDialog(this, tr("No person selected.")); return; }
-        JFileChooser fc = createFileChooser(tr("JSON (*.json)"), "json");
+        if (sel == null) { JOptionPane.showMessageDialog(this, "선택된 인물이 없습니다."); return; }
+        JFileChooser fc = createFileChooser("JSON (*.json)", "json");
         if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
             File f = ensureExt(fc.getSelectedFile(), ".json");
-            try { db.exportOneToJson(sel, f); JOptionPane.showMessageDialog(this, trf("Exported: %s", f.getAbsolutePath())); }
-            catch (Exception ex) { JOptionPane.showMessageDialog(this, ex.getMessage(), tr("Error"), JOptionPane.ERROR_MESSAGE); }
+            try { db.exportOneToJson(sel, f); JOptionPane.showMessageDialog(this, "Exported: " + f.getAbsolutePath()); }
+            catch (Exception ex) { JOptionPane.showMessageDialog(this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE); }
         }
     }
     private void exportAllCsv() {
-        JFileChooser fc = createFileChooser(tr("CSV (*.csv)"), "csv");
+        JFileChooser fc = createFileChooser("CSV (*.csv)", "csv");
         if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
             File f = ensureExt(fc.getSelectedFile(), ".csv");
-            try { db.exportAllToCsv(f); JOptionPane.showMessageDialog(this, trf("Exported: %s", f.getAbsolutePath())); }
-            catch (Exception ex) { JOptionPane.showMessageDialog(this, ex.getMessage(), tr("Error"), JOptionPane.ERROR_MESSAGE); }
+            try { db.exportAllToCsv(f); JOptionPane.showMessageDialog(this, "Exported: " + f.getAbsolutePath()); }
+            catch (Exception ex) { JOptionPane.showMessageDialog(this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE); }
         }
     }
 
@@ -1867,7 +1324,6 @@ public class PersonalDBApp extends JFrame {
             settings.applyFrom(state.settings);
         }
         settings.ensureDataDirectoryExists();
-        syncLanguageFromSettings();
         refreshPeopleList();
         schemaTableModel.fireTableDataChanged();
         buildDetailsForm(null);
@@ -1879,7 +1335,7 @@ public class PersonalDBApp extends JFrame {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); } catch (Exception ignored) {}
-            new PersonalDBApp().setVisible(true);
+            new V1_1_0___PersonalDBApp().setVisible(true);
         });
     }
 }
