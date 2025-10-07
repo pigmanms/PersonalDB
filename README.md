@@ -8,8 +8,10 @@ Requires JRE when running, please install[ java](https://java.com/).
 Install PersonalDB_V1.4.jar into "C:\PersonalDB_COMPONENT" and RunJarPersonalDB.vbs into the same folder. 
 And please run the VBS file.
 
-## [PATCH V1.4] PersonalDB Desktop - WindowsJava Improvements
-
+## [PATCH V1.4.1] PersonalDB Desktop - WindowsJava Improvements
+> V1.4.1
+- Fixed file being locked, Disabled file lock feature.
+> V1.4
 - Added auto-save function (automatically saves every 5 minutes with a system notification).
 - When exiting the program, a pop-up appears asking whether to save the current .pdb file.
 - When uploading materials such as photos, they are stored directly inside the .pdb file.
