@@ -2,7 +2,7 @@
 A lightweight and independent program that helps you build your own local database. 
 
 **[THE JAR IS NOT RUNNABLE NATIVELY, PLEASE USE VBS TO RUN]**
-## How to execute the program: 
+## How to execute the program(for Desktop(Java)): 
 Requires JRE when running, please install[ java](https://java.com/).
 
 Install PersonalDB_V1.4.jar into "C:\PersonalDB_COMPONENT" and RunJarPersonalDB.vbs into the same folder. 
