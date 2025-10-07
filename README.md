@@ -23,6 +23,11 @@ And please run the VBS file.
 - When the program starts for the first time, it creates an empty .pdb and a default_global_schema.psc file. Whenever the user edits the schema, changes are immediately reflected in the .psc.
 While editing, both .pdb and .psc files are locked by the program to prevent access or modification by other applications.
 
+
+## How to execute the app(for Android):
+Not planned, gonna convert the desktop app compatible with mobile app. 
+
+
 ## Features
 - Export the DB at once
 - Export single data(ex. only one person)
