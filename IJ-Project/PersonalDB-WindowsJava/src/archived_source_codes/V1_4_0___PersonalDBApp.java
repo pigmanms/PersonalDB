@@ -1,7 +1,7 @@
+package archived_source_codes;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
@@ -9,6 +9,8 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.file.ClosedWatchServiceException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -24,7 +26,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 
-public class PersonalDBApp extends JFrame {
+public class V1_4_0___PersonalDBApp extends JFrame {
     private static final String DEFAULT_DATA_DIRECTORY = "C:\\PersonalDB_DATA";
     private static final File DEFAULT_CONFIG_DIRECTORY = new File("C:\\PersonalDB_CONFIG");
     private static final String GLOBAL_SCHEMA_FILE_NAME = "global_schema.psc";
@@ -912,13 +914,19 @@ public class PersonalDBApp extends JFrame {
     private File currentProjectFile = null; // .pdb serialized
     private File defaultProjectFile;
     private File defaultSchemaFile;
+    private File lockedProjectFile;
+    private File lockedSchemaFile;
+    private RandomAccessFile projectLockRaf;
+    private FileLock projectFileLock;
+    private RandomAccessFile schemaLockRaf;
+    private FileLock schemaFileLock;
     private javax.swing.Timer autoSaveTimer;
     private Map<String, JComponent> currentEditors = new HashMap<>();
     private PersonRecord currentPerson;
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
     private boolean restartScheduled = false;
 
-    public PersonalDBApp() {
+    public V1_4_0___PersonalDBApp() {
         super(tr("PersonalDB"));
         this.db = new PersonalDatabase();
         this.settings = new AppSettings();
@@ -935,13 +943,13 @@ public class PersonalDBApp extends JFrame {
         setupGlobalKeyBindings();
         refreshPeopleList();
         SwingUtilities.invokeLater(this::postStartupInitialization);
-        setTitle(tr("PersonalDB" + " - Patch Version: V1.4.1")); //TODO: AUTOMATE VERSION CONTROL
+        setTitle(tr("PersonalDB"));
 
         WindowAdapter initialResizeListener = new WindowAdapter() {
             @Override
             public void windowOpened(WindowEvent e) {
                 forceInitialResizeWorkaround();
-                PersonalDBApp.this.removeWindowListener(this);
+                V1_4_0___PersonalDBApp.this.removeWindowListener(this);
             }
         };
         addWindowListener(initialResizeListener);
@@ -1025,7 +1033,7 @@ public class PersonalDBApp extends JFrame {
             removeTrayIcon();
             releaseLocks();
             dispose();
-            PersonalDBApp app = new PersonalDBApp();
+            V1_4_0___PersonalDBApp app = new V1_4_0___PersonalDBApp();
             app.setVisible(true);
         });
     }
@@ -1144,7 +1152,7 @@ public class PersonalDBApp extends JFrame {
 
     private void buildUI() {
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-        setSize(980, 720);
+        setSize(1000, 720);
         setLocationRelativeTo(null);
 
         // Menu
@@ -1255,7 +1263,6 @@ public class PersonalDBApp extends JFrame {
                         tr("• Export as JSON / CSV") + "\n" +
                         tr("• Quick search & compare") + "\n\n" +
                         tr("Copyright 2025~sometime in the future") + "\n" +
-                        tr("Github@Tensor(CaptainPMS)") + "\n" +
                         tr("MyungSu(a.k.a. Plutrious, Pigman_MS, Tensor) & Codex"),
                 tr("About"), JOptionPane.INFORMATION_MESSAGE));
         help.add(miAbout);
@@ -1382,7 +1389,7 @@ public class PersonalDBApp extends JFrame {
         }
         SwingUtilities.invokeLater(() -> {
             rebuildLanguageMenuItems();
-            JOptionPane.showMessageDialog(PersonalDBApp.this, "새로운 언어팩이 감지되었습니다.");
+            JOptionPane.showMessageDialog(V1_4_0___PersonalDBApp.this, "새로운 언어팩이 감지되었습니다.");
         });
     }
 
@@ -2013,7 +2020,7 @@ public class PersonalDBApp extends JFrame {
                 if (newName.isBlank() || newName.equals(f.name)) return;
                 FieldDefinition existing = db.schema.getField(newName);
                 if (existing != null && existing != f) {
-                    JOptionPane.showMessageDialog(PersonalDBApp.this, tr("Field name already exists."));
+                    JOptionPane.showMessageDialog(V1_4_0___PersonalDBApp.this, tr("Field name already exists."));
                     return;
                 }
                 String oldName = f.name;
@@ -2064,6 +2071,7 @@ public class PersonalDBApp extends JFrame {
         if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             File f = fc.getSelectedFile();
             saveCurrentPerson();
+            File previousLock = lockedProjectFile;
             try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(f))) {
                 Object loadedObj = ois.readObject();
                 if (loadedObj instanceof AppState) {
@@ -2078,9 +2086,15 @@ public class PersonalDBApp extends JFrame {
                 } else {
                     throw new IOException(tr("Unknown project format."));
                 }
+                lockProjectFile(f);
                 currentProjectFile = f;
                 JOptionPane.showMessageDialog(this, trf("Loaded %s", f.getName()));
             } catch (Exception ex) {
+                if (previousLock != null && !previousLock.equals(f)) {
+                    try {
+                        lockProjectFile(previousLock);
+                    } catch (IOException ignored) {}
+                }
                 JOptionPane.showMessageDialog(this, trf("Failed to open: %s", ex.getMessage()), tr("Error"), JOptionPane.ERROR_MESSAGE);
             }
         }
@@ -2124,34 +2138,103 @@ public class PersonalDBApp extends JFrame {
         if (defaultProjectFile == null) {
             return null;
         }
-        boolean needInitialContent = !defaultProjectFile.exists() || defaultProjectFile.length() == 0;
-        if (needInitialContent && !writeProjectToFile(defaultProjectFile, false)) {
-            System.err.println("Failed to prepare default project file: " + defaultProjectFile.getAbsolutePath());
+        boolean needInitialContent = !defaultProjectFile.exists();
+        try {
+            lockProjectFile(defaultProjectFile);
+            if (!needInitialContent && projectLockRaf != null) {
+                needInitialContent = projectLockRaf.length() == 0;
+            }
+            if (needInitialContent) {
+                writeProjectToFile(defaultProjectFile, false);
+            }
+        } catch (Exception ex) {
+            System.err.println("Failed to prepare default project file: " + ex.getMessage());
             return null;
         }
         return defaultProjectFile;
     }
 
+    private synchronized void lockProjectFile(File file) throws IOException {
+        if (file == null) return;
+        if (lockedProjectFile != null && lockedProjectFile.equals(file) && projectFileLock != null && projectFileLock.isValid()) {
+            return;
+        }
+        releaseProjectLock();
+        File parent = file.getParentFile();
+        if (parent != null && !parent.exists()) {
+            parent.mkdirs();
+        }
+        projectLockRaf = new RandomAccessFile(file, "rw");
+        FileChannel channel = projectLockRaf.getChannel();
+        projectFileLock = channel.lock();
+        lockedProjectFile = file;
+    }
+
+    private synchronized void releaseProjectLock() {
+        try {
+            if (projectFileLock != null && projectFileLock.isValid()) {
+                projectFileLock.release();
+            }
+        } catch (IOException ignored) {}
+        projectFileLock = null;
+        if (projectLockRaf != null) {
+            try { projectLockRaf.close(); } catch (IOException ignored) {}
+        }
+        projectLockRaf = null;
+        lockedProjectFile = null;
+    }
+
+    private synchronized void lockSchemaFile(File file) throws IOException {
+        if (file == null) return;
+        if (lockedSchemaFile != null && lockedSchemaFile.equals(file) && schemaFileLock != null && schemaFileLock.isValid()) {
+            return;
+        }
+        releaseSchemaLock();
+        File parent = file.getParentFile();
+        if (parent != null && !parent.exists()) {
+            parent.mkdirs();
+        }
+        schemaLockRaf = new RandomAccessFile(file, "rw");
+        FileChannel channel = schemaLockRaf.getChannel();
+        schemaFileLock = channel.lock();
+        lockedSchemaFile = file;
+    }
+
+    private synchronized void releaseSchemaLock() {
+        try {
+            if (schemaFileLock != null && schemaFileLock.isValid()) {
+                schemaFileLock.release();
+            }
+        } catch (IOException ignored) {}
+        schemaFileLock = null;
+        if (schemaLockRaf != null) {
+            try { schemaLockRaf.close(); } catch (IOException ignored) {}
+        }
+        schemaLockRaf = null;
+        lockedSchemaFile = null;
+    }
+
     private void releaseLocks() {
-        // No persistent file locks are maintained.
+        releaseProjectLock();
+        releaseSchemaLock();
     }
 
     private boolean writeProjectToFile(File target, boolean showErrorDialog) {
         if (target == null) return false;
         try {
-            File parent = target.getParentFile();
-            if (parent != null && !parent.exists()) {
-                parent.mkdirs();
+            lockProjectFile(target);
+            if (projectLockRaf == null) {
+                throw new IOException("Project file handle unavailable");
             }
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
             try (ObjectOutputStream oos = new ObjectOutputStream(buffer)) {
                 oos.writeObject(new AppState(db, settings));
             }
             byte[] data = buffer.toByteArray();
-            try (FileOutputStream fos = new FileOutputStream(target, false)) {
-                fos.write(data);
-                fos.getFD().sync();
-            }
+            projectLockRaf.setLength(0);
+            projectLockRaf.seek(0);
+            projectLockRaf.write(data);
+            projectLockRaf.getChannel().force(true);
             return true;
         } catch (Exception ex) {
             if (showErrorDialog) {
@@ -2277,14 +2360,14 @@ public class PersonalDBApp extends JFrame {
         if (defaultSchemaFile == null) {
             defaultSchemaFile = new File(DEFAULT_CONFIG_DIRECTORY, DEFAULT_SCHEMA_FILE_NAME);
         }
-        if (defaultSchemaFile != null) {
-            File parent = defaultSchemaFile.getParentFile();
-            if (parent != null && !parent.exists()) {
-                parent.mkdirs();
-            }
-            if (!defaultSchemaFile.exists() || defaultSchemaFile.length() == 0) {
+        boolean needSchema = defaultSchemaFile != null && !defaultSchemaFile.exists();
+        try {
+            lockSchemaFile(defaultSchemaFile);
+            if (needSchema || (schemaLockRaf != null && schemaLockRaf.length() == 0)) {
                 persistDefaultSchema();
             }
+        } catch (Exception ex) {
+            System.err.println("Failed to prepare schema file: " + ex.getMessage());
         }
     }
 
@@ -2293,17 +2376,20 @@ public class PersonalDBApp extends JFrame {
             defaultSchemaFile = new File(DEFAULT_CONFIG_DIRECTORY, DEFAULT_SCHEMA_FILE_NAME);
         }
         try {
+            lockSchemaFile(defaultSchemaFile);
+            if (schemaLockRaf == null) {
+                throw new IOException("Schema file handle unavailable");
+            }
             Schema snapshot = db.snapshotSchema();
-            File parent = defaultSchemaFile.getParentFile();
-            if (parent != null && !parent.exists()) {
-                parent.mkdirs();
-            }
-            try (FileOutputStream fos = new FileOutputStream(defaultSchemaFile, false);
-                 ObjectOutputStream oos = new ObjectOutputStream(fos)) {
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            try (ObjectOutputStream oos = new ObjectOutputStream(buffer)) {
                 oos.writeObject(snapshot);
-                oos.flush();
-                fos.getFD().sync();
             }
+            byte[] data = buffer.toByteArray();
+            schemaLockRaf.setLength(0);
+            schemaLockRaf.seek(0);
+            schemaLockRaf.write(data);
+            schemaLockRaf.getChannel().force(true);
         } catch (Exception ex) {
             System.err.println("Failed to persist schema: " + ex.getMessage());
         }
@@ -2378,7 +2464,7 @@ public class PersonalDBApp extends JFrame {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); } catch (Exception ignored) {}
-            new PersonalDBApp().setVisible(true);
+            new V1_4_0___PersonalDBApp().setVisible(true);
         });
     }
 }
