@@ -1,3 +1,5 @@
+package archived_source_codes;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
@@ -5,12 +7,8 @@ import javax.swing.event.DocumentListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
-import java.awt.event.*;
-import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
 import java.nio.file.ClosedWatchServiceException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -26,12 +24,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 
-public class PersonalDBApp extends JFrame {
+public class V1_3_0___PersonalDBApp extends JFrame {
     private static final String DEFAULT_DATA_DIRECTORY = "C:\\PersonalDB_DATA";
     private static final File DEFAULT_CONFIG_DIRECTORY = new File("C:\\PersonalDB_CONFIG");
     private static final String GLOBAL_SCHEMA_FILE_NAME = "global_schema.psc";
-    private static final String DEFAULT_PROJECT_FILE_NAME = "default_autosave.pdb";
-    private static final String DEFAULT_SCHEMA_FILE_NAME = "default_global_schema.psc";
 
     private static final LanguageManager LANGUAGE_MANAGER = new LanguageManager();
 
@@ -86,7 +82,7 @@ public class PersonalDBApp extends JFrame {
 
     private static Map<String, String> defaultEnglishTranslations() {
         Map<String, String> translations = new LinkedHashMap<>();
-        translations.put("PersonalDB", "PersonalDB");
+        translations.put("PersonalDB - Make your own HR", "PersonalDB - Make your own HR");
         translations.put("File", "File");
         translations.put("Edit", "Edit");
         translations.put("Config", "Config");
@@ -96,21 +92,16 @@ public class PersonalDBApp extends JFrame {
         translations.put("Delete", "Delete");
         translations.put("Search", "Search");
         translations.put("Compare", "Compare");
-        translations.put("Clear", "Clear");
         translations.put("Language changed to %s. The application will restart.", "Language changed to %s. The application will restart.");
         translations.put("Global schema imported. Restart now?", "Global schema imported. Restart now?");
         translations.put("Global schema file is missing. Load it now? (requires restart)", "Global schema file is missing. Load it now? (requires restart)");
         translations.put("Global schema copied into the config folder. The app will restart.", "Global schema copied into the config folder. The app will restart.");
-        translations.put("File not found.", "File not found.");
-        translations.put("Failed to load file: %s", "Failed to load file: %s");
-        translations.put("Auto-saved to %s", "Auto-saved to %s");
-        translations.put("Save project before exiting?", "Save project before exiting?");
         return translations;
     }
 
     private static Map<String, String> defaultKoreanTranslations() {
         Map<String, String> translations = new LinkedHashMap<>();
-        translations.put("PersonalDB", "PersonalDB");
+        translations.put("PersonalDB - Make your own HR", "PersonalDB - 나만의 HR");
         translations.put("File", "파일");
         translations.put("Edit", "편집");
         translations.put("Config", "설정");
@@ -120,21 +111,16 @@ public class PersonalDBApp extends JFrame {
         translations.put("Delete", "삭제");
         translations.put("Search", "검색");
         translations.put("Compare", "비교");
-        translations.put("Clear", "지우기");
         translations.put("Language changed to %s. The application will restart.", "%s 언어로 변경되었습니다. 프로그램이 다시 시작됩니다.");
         translations.put("Global schema imported. Restart now?", "글로벌 스키마가 가져와졌습니다. 지금 재시작할까요?");
         translations.put("Global schema file is missing. Load it now? (requires restart)", "글로벌 스키마 파일이 없습니다. 지금 불러올까요? (재시작 필요)");
         translations.put("Global schema copied into the config folder. The app will restart.", "글로벌 스키마가 설정 폴더에 복사되었습니다. 프로그램이 다시 시작됩니다.");
-        translations.put("File not found.", "파일을 찾을 수 없습니다.");
-        translations.put("Failed to load file: %s", "파일을 불러오지 못했습니다: %s");
-        translations.put("Auto-saved to %s", "%s(으)로 자동 저장되었습니다");
-        translations.put("Save project before exiting?", "종료하기 전에 프로젝트를 저장할까요?");
         return translations;
     }
 
     private static Map<String, String> defaultJapaneseTranslations() {
         Map<String, String> translations = new LinkedHashMap<>();
-        translations.put("PersonalDB", "PersonalDB");
+        translations.put("PersonalDB - Make your own HR", "PersonalDB - 自分だけのHR");
         translations.put("File", "ファイル");
         translations.put("Edit", "編集");
         translations.put("Config", "設定");
@@ -144,15 +130,10 @@ public class PersonalDBApp extends JFrame {
         translations.put("Delete", "削除");
         translations.put("Search", "検索");
         translations.put("Compare", "比較");
-        translations.put("Clear", "クリア");
         translations.put("Language changed to %s. The application will restart.", "言語が%sに変更されました。アプリケーションが再起動します。");
         translations.put("Global schema imported. Restart now?", "グローバルスキーマを読み込みました。今すぐ再起動しますか？");
         translations.put("Global schema file is missing. Load it now? (requires restart)", "グローバルスキーマファイルが見つかりません。今すぐ読み込みますか？(再起動が必要)");
         translations.put("Global schema copied into the config folder. The app will restart.", "グローバルスキーマを設定フォルダにコピーしました。アプリケーションが再起動します。");
-        translations.put("File not found.", "ファイルが見つかりません。");
-        translations.put("Failed to load file: %s", "ファイルを読み込めませんでした: %s");
-        translations.put("Auto-saved to %s", "%s に自動保存しました");
-        translations.put("Save project before exiting?", "終了する前にプロジェクトを保存しますか？");
         return translations;
     }
 
@@ -417,44 +398,6 @@ public class PersonalDBApp extends JFrame {
 
     // ---- Model ----
     public enum FieldType implements Serializable { TEXT, LONG_TEXT, NUMBER, BOOLEAN, DATE, LIST, ENUM, IMAGE_PATH }
-
-    public static class EmbeddedResource implements Serializable {
-        private static final long serialVersionUID = 1L;
-        public String fileName;
-        public String mimeType;
-        public String base64Data;
-
-        public EmbeddedResource() {}
-
-        public EmbeddedResource(String fileName, String mimeType, String base64Data) {
-            this.fileName = fileName;
-            this.mimeType = mimeType;
-            this.base64Data = base64Data;
-        }
-
-        public byte[] decode() {
-            if (base64Data == null) return new byte[0];
-            return Base64.getDecoder().decode(base64Data);
-        }
-
-        @Override
-        public String toString() {
-            return fileName == null ? "[embedded]" : fileName;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) return true;
-            if (!(obj instanceof EmbeddedResource)) return false;
-            EmbeddedResource other = (EmbeddedResource) obj;
-            return Objects.equals(fileName, other.fileName) && Objects.equals(base64Data, other.base64Data) && Objects.equals(mimeType, other.mimeType);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(fileName, mimeType, base64Data);
-        }
-    }
 
     public static class FieldDefinition implements Serializable {
         public String name;
@@ -819,19 +762,6 @@ public class PersonalDBApp extends JFrame {
                         sb.append("]");
                         return sb.toString();
                     } else return "[]";
-                case IMAGE_PATH:
-                    if (v instanceof EmbeddedResource) {
-                        EmbeddedResource res = (EmbeddedResource) v;
-                        StringBuilder img = new StringBuilder();
-                        img.append("{");
-                        img.append("\"fileName\": ").append(res.fileName == null ? "null" : quote(res.fileName));
-                        img.append(", \"mimeType\": ").append(res.mimeType == null ? "null" : quote(res.mimeType));
-                        img.append(", \"base64\": ").append(res.base64Data == null ? "null" : quote(res.base64Data));
-                        img.append("}");
-                        return img.toString();
-                    }
-                    if (v == null) return "null";
-                    return quote(String.valueOf(v));
                 default:
                     return quote(String.valueOf(v));
             }
@@ -867,10 +797,6 @@ public class PersonalDBApp extends JFrame {
                         @SuppressWarnings("unchecked") List<Object> lst = (List<Object>) v;
                         String joined = lst.stream().map(x -> x==null?"":String.valueOf(x)).collect(Collectors.joining("; "));
                         sb.append(escapeCsv(joined));
-                    } else if (f.type == FieldType.IMAGE_PATH && v instanceof EmbeddedResource) {
-                        EmbeddedResource res = (EmbeddedResource) v;
-                        String label = res.fileName != null ? res.fileName : "[embedded]";
-                        sb.append(escapeCsv(label));
                     } else {
                         sb.append(escapeCsv(String.valueOf(v)));
                     }
@@ -909,29 +835,14 @@ public class PersonalDBApp extends JFrame {
     private WatchService languageWatchService;
     private Thread languageWatchThread;
 
-    private TrayIcon trayIcon;
-
     private File currentProjectFile = null; // .pdb serialized
-    private File defaultProjectFile;
-    private File defaultSchemaFile;
-    private File lockedProjectFile;
-    private File lockedSchemaFile;
-    private RandomAccessFile projectLockRaf;
-    private FileLock projectFileLock;
-    private RandomAccessFile schemaLockRaf;
-    private FileLock schemaFileLock;
-    private javax.swing.Timer autoSaveTimer;
-    private Map<String, JComponent> currentEditors = new HashMap<>();
-    private PersonRecord currentPerson;
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
     private boolean restartScheduled = false;
 
-    public PersonalDBApp() {
-        super(tr("PersonalDB"));
+    public V1_3_0___PersonalDBApp() {
+        super(tr("PersonalDB - Make your own HR"));
         this.db = new PersonalDatabase();
         this.settings = new AppSettings();
-        this.defaultProjectFile = new File(settings.getDataDirectoryFile(), DEFAULT_PROJECT_FILE_NAME);
-        this.defaultSchemaFile = new File(DEFAULT_CONFIG_DIRECTORY, DEFAULT_SCHEMA_FILE_NAME);
         LanguagePack active = LANGUAGE_MANAGER.getActivePack();
         if (active != null) {
             this.settings.setLanguageCode(active.code);
@@ -939,46 +850,14 @@ public class PersonalDBApp extends JFrame {
         seedInitialSchema(db.schema);
         schemaTableModel = new SchemaTableModel();
         buildUI();
-        configureWindowCloseBehavior();
-        setupGlobalKeyBindings();
         refreshPeopleList();
         SwingUtilities.invokeLater(this::postStartupInitialization);
-        setTitle(tr("PersonalDB"));
-
-        WindowAdapter initialResizeListener = new WindowAdapter() {
-            @Override
-            public void windowOpened(WindowEvent e) {
-                forceInitialResizeWorkaround();
-                PersonalDBApp.this.removeWindowListener(this);
-            }
-        };
-        addWindowListener(initialResizeListener);
-    }
-
-    private void forceInitialResizeWorkaround() {
-        final int originalState = getExtendedState();
-        final Dimension originalSize = getSize();
-        final Point originalLocation = getLocation();
-
-        SwingUtilities.invokeLater(() -> {
-            setExtendedState(JFrame.MAXIMIZED_BOTH);
-            SwingUtilities.invokeLater(() -> {
-                setExtendedState(originalState);
-                if ((originalState & JFrame.MAXIMIZED_BOTH) == 0) {
-                    setSize(originalSize);
-                    setLocation(originalLocation);
-                }
-            });
-        });
+        setTitle(tr("PersonalDB - Make your own HR"));
     }
 
     private void postStartupInitialization() {
         settings.ensureDataDirectoryExists();
         ensureConfigDirectoryExists();
-        defaultProjectFile = new File(settings.getDataDirectoryFile(), DEFAULT_PROJECT_FILE_NAME);
-        defaultSchemaFile = new File(DEFAULT_CONFIG_DIRECTORY, DEFAULT_SCHEMA_FILE_NAME);
-        initializeDefaultFiles();
-        initializeTrayIcon();
         syncLanguageFromSettings();
         startLanguagePackWatcher();
         File globalSchemaFile = new File(DEFAULT_CONFIG_DIRECTORY, GLOBAL_SCHEMA_FILE_NAME);
@@ -993,12 +872,6 @@ public class PersonalDBApp extends JFrame {
                 }
             }
         }
-        startAutoSaveTimer();
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            stopLanguagePackWatcher();
-            releaseLocks();
-            removeTrayIcon();
-        }, "PersonalDBShutdown"));
     }
 
     private void ensureConfigDirectoryExists() {
@@ -1028,12 +901,8 @@ public class PersonalDBApp extends JFrame {
         restartScheduled = true;
         SwingUtilities.invokeLater(() -> {
             setVisible(false);
-            stopAutoSaveTimer();
-            stopLanguagePackWatcher();
-            removeTrayIcon();
-            releaseLocks();
             dispose();
-            PersonalDBApp app = new PersonalDBApp();
+            V1_3_0___PersonalDBApp app = new V1_3_0___PersonalDBApp();
             app.setVisible(true);
         });
     }
@@ -1045,7 +914,6 @@ public class PersonalDBApp extends JFrame {
         refreshSearchFieldCombo();
         buildDetailsForm(peopleList.getSelectedValue());
         peopleList.repaint();
-        persistDefaultSchema();
     }
 
     private boolean loadGlobalSchemaFromConfig() {
@@ -1104,9 +972,6 @@ public class PersonalDBApp extends JFrame {
         // Starter fields (can be edited/removed by user later)
         s.addField(fd("사진", FieldType.IMAGE_PATH));
         s.addField(fd("이름", FieldType.TEXT));
-        s.addField(fd("만나게 된 계기", FieldType.LONG_TEXT));
-        s.addField(fd("전화번호", FieldType.TEXT));
-        s.addField(fd("사는곳", FieldType.TEXT));
         s.addField(fd("특성", FieldType.LONG_TEXT));
         s.addField(fd("좋아하는것", FieldType.LIST));
         s.addField(fd("싫어하는것", FieldType.LIST));
@@ -1120,39 +985,9 @@ public class PersonalDBApp extends JFrame {
     }
     private FieldDefinition fd(String name, FieldType t) { return new FieldDefinition(name, t); }
 
-    private void configureWindowCloseBehavior() {
-        addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                requestExit();
-            }
-        });
-    }
-
-    private void setupGlobalKeyBindings() {
-        JRootPane root = getRootPane();
-        if (root == null) {
-            return;
-        }
-        int shortcutMask;
-        try {
-            shortcutMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
-        } catch (HeadlessException ex) {
-            shortcutMask = InputEvent.CTRL_DOWN_MASK;
-        }
-        KeyStroke saveStroke = KeyStroke.getKeyStroke(KeyEvent.VK_S, shortcutMask);
-        root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(saveStroke, "global-save");
-        root.getActionMap().put("global-save", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                performQuickSave();
-            }
-        });
-    }
-
     private void buildUI() {
-        setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-        setSize(1000, 720);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(1180, 720);
         setLocationRelativeTo(null);
 
         // Menu
@@ -1171,10 +1006,7 @@ public class PersonalDBApp extends JFrame {
             }
         });
         peopleList.addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) {
-                saveCurrentPerson();
-                buildDetailsForm(peopleList.getSelectedValue());
-            }
+            if (!e.getValueIsAdjusting()) buildDetailsForm(peopleList.getSelectedValue());
         });
         JButton addBtn = new JButton(tr("+ New Person"));
         addBtn.addActionListener(e -> {
@@ -1194,17 +1026,9 @@ public class PersonalDBApp extends JFrame {
                 refreshCompareCombos();
             }
         });
-        JButton loadProjectBtn = new JButton(tr("Load PDB"));
-        loadProjectBtn.addActionListener(e -> openProject());
-        JButton saveProjectBtn = new JButton(tr("Save PDB"));
-        saveProjectBtn.addActionListener(e -> saveProject(false));
         JPanel leftHeader = new JPanel(new BorderLayout());
-        leftHeader.setBorder(new EmptyBorder(8, 8, 8, 8));
         JPanel leftButtons = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        leftButtons.add(addBtn);
-        leftButtons.add(delBtn);
-        leftButtons.add(loadProjectBtn);
-        leftButtons.add(saveProjectBtn);
+        leftButtons.add(addBtn); leftButtons.add(delBtn);
         leftHeader.add(leftButtons, BorderLayout.WEST);
         JPanel leftPanel = new JPanel(new BorderLayout());
         leftPanel.add(leftHeader, BorderLayout.NORTH);
@@ -1215,8 +1039,6 @@ public class PersonalDBApp extends JFrame {
         tabs.addTab(tr("Details"), detailsScroll);
         tabs.addTab(tr("Search / Compare"), buildSearchComparePanel());
         tabs.addTab(tr("Schema"), buildSchemaPanel());
-
-        detailsScroll.getVerticalScrollBar().setUnitIncrement(24);
 
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, tabs);
         split.setDividerLocation(280);
@@ -1244,7 +1066,7 @@ public class PersonalDBApp extends JFrame {
         JMenuItem miExportCsv = new JMenuItem(tr("Export ALL to CSV..."));
         miExportCsv.addActionListener(e -> exportAllCsv());
         JMenuItem miExit = new JMenuItem(tr("Exit"));
-        miExit.addActionListener(e -> requestExit());
+        miExit.addActionListener(e -> dispose());
         file.add(miNew); file.add(miOpen); file.addSeparator(); file.add(miSave); file.add(miSaveAs); file.addSeparator();
         file.add(miExportAllJson); file.add(miExportOneJson); file.add(miExportCsv); file.addSeparator(); file.add(miExit);
 
@@ -1389,7 +1211,7 @@ public class PersonalDBApp extends JFrame {
         }
         SwingUtilities.invokeLater(() -> {
             rebuildLanguageMenuItems();
-            JOptionPane.showMessageDialog(PersonalDBApp.this, "새로운 언어팩이 감지되었습니다.");
+            JOptionPane.showMessageDialog(V1_3_0___PersonalDBApp.this, "새로운 언어팩이 감지되었습니다.");
         });
     }
 
@@ -1418,10 +1240,7 @@ public class PersonalDBApp extends JFrame {
 
     @Override
     public void dispose() {
-        stopAutoSaveTimer();
         stopLanguagePackWatcher();
-        removeTrayIcon();
-        releaseLocks();
         super.dispose();
     }
 
@@ -1621,8 +1440,7 @@ public class PersonalDBApp extends JFrame {
         gc.weightx = 1;
 
         int row = 0;
-        currentEditors = new LinkedHashMap<>();
-        currentPerson = p;
+        Map<String, JComponent> editors = new HashMap<>();
 
         for (FieldDefinition f : db.schema.fields) {
             gc.gridx = 0; gc.gridy = row; gc.weightx=0; gc.fill=GridBagConstraints.NONE;
@@ -1632,7 +1450,7 @@ public class PersonalDBApp extends JFrame {
             gc.gridx = 1; gc.gridy = row; gc.weightx=1; gc.fill=GridBagConstraints.HORIZONTAL;
             JComponent editor = editorForField(f, p==null?null:p.data.get(f.name));
             detailsForm.add(editor, gc);
-            currentEditors.put(f.name, editor);
+            editors.put(f.name, editor);
             row++;
             if (f.type == FieldType.LONG_TEXT) {
                 gc.gridx = 1; gc.gridy = row-1; gc.weighty=1; gc.fill=GridBagConstraints.BOTH;
@@ -1641,7 +1459,13 @@ public class PersonalDBApp extends JFrame {
 
         JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton saveBtn = new JButton(tr("Save (selected person)"));
-        saveBtn.addActionListener(e -> saveCurrentPerson());
+        saveBtn.addActionListener(e -> {
+            if (p != null) {
+                applyEditorsToRecord(p, editors);
+                p.updatedAt = new Date();
+                peopleList.repaint();
+            }
+        });
         JButton exportOne = new JButton(tr("Export (JSON; selected person)"));
         exportOne.addActionListener(e -> exportOneJson());
         btns.add(saveBtn); btns.add(exportOne);
@@ -1659,15 +1483,6 @@ public class PersonalDBApp extends JFrame {
             Object value = readEditorValue(f, ed);
             p.data.put(f.name, value);
         }
-    }
-
-    private void saveCurrentPerson() {
-        if (currentPerson == null || currentEditors == null || currentEditors.isEmpty()) {
-            return;
-        }
-        applyEditorsToRecord(currentPerson, currentEditors);
-        currentPerson.updatedAt = new Date();
-        peopleList.repaint();
     }
 
     private JComponent editorForField(FieldDefinition f, Object current) {
@@ -1746,137 +1561,42 @@ public class PersonalDBApp extends JFrame {
 
     private JComponent buildImagePicker(Object current) {
         JPanel panel = new JPanel(new BorderLayout());
-        JLabel preview = new JLabel(tr("No preview"), SwingConstants.CENTER);
-        preview.setPreferredSize(new Dimension(140, 140));
-        preview.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
-        preview.setOpaque(true);
-        preview.setBackground(Color.WHITE);
-
-        JTextField nameField = new JTextField();
-        nameField.setEditable(false);
-
+        JLabel preview = new JLabel(); preview.setPreferredSize(new Dimension(120, 120)); preview.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY)); preview.setHorizontalAlignment(SwingConstants.CENTER);
+        JTextField pathField = new JTextField(current==null?"":String.valueOf(current));
         JButton choose = new JButton(tr("Browse..."));
         choose.addActionListener(e -> {
             JFileChooser fc = new JFileChooser();
             fc.setFileFilter(new FileNameExtensionFilter(tr("Images"), "png","jpg","jpeg","gif","bmp"));
             if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
                 File f = fc.getSelectedFile();
-                EmbeddedResource resource = createResourceFromFile(f);
-                if (resource != null) {
-                    panel.putClientProperty("embedded-resource", resource);
-                    panel.putClientProperty("legacy-path", null);
-                    nameField.setText(resource.fileName);
-                    updateImagePreview(preview, resource);
-                }
+                pathField.setText(f.getAbsolutePath());
+                setPreviewImage(preview, f);
             }
         });
-
-        JButton clear = new JButton(tr("Clear"));
-        clear.addActionListener(e -> {
-            panel.putClientProperty("embedded-resource", null);
-            panel.putClientProperty("legacy-path", null);
-            nameField.setText("");
-            preview.setIcon(null);
-            preview.setText(tr("No preview"));
+        pathField.getDocument().addDocumentListener(new DocumentListener() {
+            void upd(){ String p = pathField.getText(); if (p!=null && !p.isBlank()) setPreviewImage(preview, new File(p)); else preview.setIcon(null); }
+            public void insertUpdate(DocumentEvent e){upd();}
+            public void removeUpdate(DocumentEvent e){upd();}
+            public void changedUpdate(DocumentEvent e){upd();}
         });
-
-        JPanel controlButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        controlButtons.add(choose);
-        controlButtons.add(clear);
-
-        JPanel top = new JPanel(new BorderLayout());
-        top.add(nameField, BorderLayout.CENTER);
-        top.add(controlButtons, BorderLayout.EAST);
-
+        if (current != null) setPreviewImage(preview, new File(String.valueOf(current)));
+        JPanel top = new JPanel(new BorderLayout()); top.add(pathField, BorderLayout.CENTER); top.add(choose, BorderLayout.EAST);
         panel.add(top, BorderLayout.NORTH);
         panel.add(preview, BorderLayout.CENTER);
-
-        EmbeddedResource existing = toEmbeddedResource(current);
-        if (existing != null) {
-            panel.putClientProperty("embedded-resource", existing);
-            nameField.setText(existing.fileName);
-            updateImagePreview(preview, existing);
-        } else if (current instanceof String) {
-            panel.putClientProperty("legacy-path", current);
-            nameField.setText(String.valueOf(current));
-        }
-
-        panel.putClientProperty("image-name-field", nameField);
-        panel.putClientProperty("image-preview", preview);
+        panel.putClientProperty("image-path-field", pathField);
         return panel;
     }
 
-    private void updateImagePreview(JLabel lbl, EmbeddedResource resource) {
-        if (resource == null || resource.base64Data == null || resource.base64Data.isBlank()) {
-            lbl.setIcon(null);
-            lbl.setText(tr("No preview"));
-            return;
-        }
+    private void setPreviewImage(JLabel lbl, File f) {
+        if (f == null || !f.exists()) { lbl.setIcon(null); lbl.setText(tr("No preview")); return; }
         try {
-            byte[] data = resource.decode();
-            ImageIcon icon = new ImageIcon(data);
-            Image scaled = scaleToLabel(icon.getImage(), lbl);
-            lbl.setText(" ");
+            ImageIcon icon = new ImageIcon(f.getAbsolutePath());
+            Image img = icon.getImage();
+            int w = lbl.getWidth()>0?lbl.getWidth():120; int h = lbl.getHeight()>0?lbl.getHeight():120;
+            Image scaled = img.getScaledInstance(w, h, Image.SCALE_SMOOTH);
+            lbl.setText("");
             lbl.setIcon(new ImageIcon(scaled));
-        } catch (Exception ex) {
-            lbl.setIcon(null);
-            lbl.setText(tr("Image error"));
-        }
-    }
-
-    private Image scaleToLabel(Image img, JLabel lbl) {
-        int w = Math.max(1, lbl.getWidth());
-        int h = Math.max(1, lbl.getHeight());
-        if (w == 1 && h == 1) {
-            w = 140;
-            h = 140;
-        }
-        int imgW = img.getWidth(null);
-        int imgH = img.getHeight(null);
-        if (imgW <= 0 || imgH <= 0) {
-            return img.getScaledInstance(w, h, Image.SCALE_SMOOTH);
-        }
-        double ratio = Math.min((double) w / imgW, (double) h / imgH);
-        int newW = Math.max(1, (int) Math.round(imgW * ratio));
-        int newH = Math.max(1, (int) Math.round(imgH * ratio));
-        return img.getScaledInstance(newW, newH, Image.SCALE_SMOOTH);
-    }
-
-    private EmbeddedResource createResourceFromFile(File file) {
-        return createResourceFromFile(file, true);
-    }
-
-    private EmbeddedResource createResourceFromFile(File file, boolean showError) {
-        if (file == null || !file.exists()) {
-            if (showError) {
-                JOptionPane.showMessageDialog(this, tr("File not found."), tr("Error"), JOptionPane.ERROR_MESSAGE);
-            }
-            return null;
-        }
-        try {
-            byte[] data = Files.readAllBytes(file.toPath());
-            String base64 = Base64.getEncoder().encodeToString(data);
-            String mime = Files.probeContentType(file.toPath());
-            return new EmbeddedResource(file.getName(), mime, base64);
-        } catch (IOException ex) {
-            if (showError) {
-                JOptionPane.showMessageDialog(this, trf("Failed to load file: %s", ex.getMessage()), tr("Error"), JOptionPane.ERROR_MESSAGE);
-            }
-            return null;
-        }
-    }
-
-    private EmbeddedResource toEmbeddedResource(Object current) {
-        if (current instanceof EmbeddedResource) {
-            return (EmbeddedResource) current;
-        }
-        if (current instanceof String) {
-            String path = String.valueOf(current);
-            if (!path.isBlank()) {
-                return createResourceFromFile(new File(path), false);
-            }
-        }
-        return null;
+        } catch (Exception ex) { lbl.setText(tr("Image error")); }
     }
 
     private Object readEditorValue(FieldDefinition f, JComponent ed) {
@@ -1936,15 +1656,8 @@ public class PersonalDBApp extends JFrame {
             }
             case IMAGE_PATH: {
                 if (ed instanceof JPanel) {
-                    EmbeddedResource res = (EmbeddedResource) ((JPanel) ed).getClientProperty("embedded-resource");
-                    if (res != null) {
-                        return res;
-                    }
-                    Object legacy = ((JPanel) ed).getClientProperty("legacy-path");
-                    if (legacy instanceof String) {
-                        return legacy;
-                    }
-                    return null;
+                    JTextField tf = (JTextField) ((JPanel) ed).getClientProperty("image-path-field");
+                    return tf==null?null:tf.getText();
                 }
                 return null;
             }
@@ -1974,7 +1687,6 @@ public class PersonalDBApp extends JFrame {
                 schemaTableModel.fireTableDataChanged();
                 refreshSearchFieldCombo();
                 buildDetailsForm(peopleList.getSelectedValue());
-                persistDefaultSchema();
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, ex.getMessage(), tr("Error"), JOptionPane.ERROR_MESSAGE);
             }
@@ -1992,7 +1704,6 @@ public class PersonalDBApp extends JFrame {
             schemaTableModel.fireTableDataChanged();
             refreshSearchFieldCombo();
             buildDetailsForm(peopleList.getSelectedValue());
-            persistDefaultSchema();
         }
     }
 
@@ -2020,7 +1731,7 @@ public class PersonalDBApp extends JFrame {
                 if (newName.isBlank() || newName.equals(f.name)) return;
                 FieldDefinition existing = db.schema.getField(newName);
                 if (existing != null && existing != f) {
-                    JOptionPane.showMessageDialog(PersonalDBApp.this, tr("Field name already exists."));
+                    JOptionPane.showMessageDialog(V1_3_0___PersonalDBApp.this, tr("Field name already exists."));
                     return;
                 }
                 String oldName = f.name;
@@ -2041,7 +1752,6 @@ public class PersonalDBApp extends JFrame {
             fireTableRowsUpdated(rowIndex, rowIndex);
             refreshSearchFieldCombo();
             buildDetailsForm(peopleList.getSelectedValue());
-            persistDefaultSchema();
         }
     }
 
@@ -2056,12 +1766,7 @@ public class PersonalDBApp extends JFrame {
         if (!loadGlobalSchemaFromConfig()) {
             seedInitialSchema(db.schema);
         }
-        persistDefaultSchema();
         currentProjectFile = null;
-        File active = getActiveProjectFile();
-        if (active != null) {
-            writeProjectToFile(active, false);
-        }
         refreshPeopleList();
         buildDetailsForm(null);
     }
@@ -2070,8 +1775,6 @@ public class PersonalDBApp extends JFrame {
         JFileChooser fc = createFileChooser(tr("Personal DB (*.pdb)"), "pdb");
         if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             File f = fc.getSelectedFile();
-            saveCurrentPerson();
-            File previousLock = lockedProjectFile;
             try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(f))) {
                 Object loadedObj = ois.readObject();
                 if (loadedObj instanceof AppState) {
@@ -2086,312 +1789,28 @@ public class PersonalDBApp extends JFrame {
                 } else {
                     throw new IOException(tr("Unknown project format."));
                 }
-                lockProjectFile(f);
                 currentProjectFile = f;
                 JOptionPane.showMessageDialog(this, trf("Loaded %s", f.getName()));
             } catch (Exception ex) {
-                if (previousLock != null && !previousLock.equals(f)) {
-                    try {
-                        lockProjectFile(previousLock);
-                    } catch (IOException ignored) {}
-                }
                 JOptionPane.showMessageDialog(this, trf("Failed to open: %s", ex.getMessage()), tr("Error"), JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
     private void saveProject(boolean saveAs) {
-        saveCurrentPerson();
         File target = currentProjectFile;
         if (saveAs || target == null) {
             JFileChooser fc = createFileChooser(tr("Personal DB (*.pdb)"), "pdb");
             if (fc.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) return;
             target = ensureExt(fc.getSelectedFile(), ".pdb");
         }
-        if (target == null) {
-            target = ensureDefaultProjectFile();
-        }
-        if (target == null) return;
-        if (writeProjectToFile(target, true)) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(target))) {
+            AppState state = new AppState(db, settings);
+            oos.writeObject(state);
             currentProjectFile = target;
-            showSystemNotification(tr("PersonalDB"), trf("Saved to %s", target.getName()));
             JOptionPane.showMessageDialog(this, trf("Saved to %s", target.getName()));
-        }
-    }
-
-    private File getActiveProjectFile() {
-        if (currentProjectFile != null) {
-            return currentProjectFile;
-        }
-        return ensureDefaultProjectFile();
-    }
-
-    private File ensureDefaultProjectFile() {
-        if (settings == null) return null;
-        File base = settings.getDataDirectoryFile();
-        if (base != null && !base.exists()) {
-            base.mkdirs();
-        }
-        if (defaultProjectFile == null || (base != null && !Objects.equals(defaultProjectFile.getParentFile(), base))) {
-            defaultProjectFile = new File(base, DEFAULT_PROJECT_FILE_NAME);
-        }
-        if (defaultProjectFile == null) {
-            return null;
-        }
-        boolean needInitialContent = !defaultProjectFile.exists();
-        try {
-            lockProjectFile(defaultProjectFile);
-            if (!needInitialContent && projectLockRaf != null) {
-                needInitialContent = projectLockRaf.length() == 0;
-            }
-            if (needInitialContent) {
-                writeProjectToFile(defaultProjectFile, false);
-            }
         } catch (Exception ex) {
-            System.err.println("Failed to prepare default project file: " + ex.getMessage());
-            return null;
-        }
-        return defaultProjectFile;
-    }
-
-    private synchronized void lockProjectFile(File file) throws IOException {
-        if (file == null) return;
-        if (lockedProjectFile != null && lockedProjectFile.equals(file) && projectFileLock != null && projectFileLock.isValid()) {
-            return;
-        }
-        releaseProjectLock();
-        File parent = file.getParentFile();
-        if (parent != null && !parent.exists()) {
-            parent.mkdirs();
-        }
-        projectLockRaf = new RandomAccessFile(file, "rw");
-        FileChannel channel = projectLockRaf.getChannel();
-        projectFileLock = channel.lock();
-        lockedProjectFile = file;
-    }
-
-    private synchronized void releaseProjectLock() {
-        try {
-            if (projectFileLock != null && projectFileLock.isValid()) {
-                projectFileLock.release();
-            }
-        } catch (IOException ignored) {}
-        projectFileLock = null;
-        if (projectLockRaf != null) {
-            try { projectLockRaf.close(); } catch (IOException ignored) {}
-        }
-        projectLockRaf = null;
-        lockedProjectFile = null;
-    }
-
-    private synchronized void lockSchemaFile(File file) throws IOException {
-        if (file == null) return;
-        if (lockedSchemaFile != null && lockedSchemaFile.equals(file) && schemaFileLock != null && schemaFileLock.isValid()) {
-            return;
-        }
-        releaseSchemaLock();
-        File parent = file.getParentFile();
-        if (parent != null && !parent.exists()) {
-            parent.mkdirs();
-        }
-        schemaLockRaf = new RandomAccessFile(file, "rw");
-        FileChannel channel = schemaLockRaf.getChannel();
-        schemaFileLock = channel.lock();
-        lockedSchemaFile = file;
-    }
-
-    private synchronized void releaseSchemaLock() {
-        try {
-            if (schemaFileLock != null && schemaFileLock.isValid()) {
-                schemaFileLock.release();
-            }
-        } catch (IOException ignored) {}
-        schemaFileLock = null;
-        if (schemaLockRaf != null) {
-            try { schemaLockRaf.close(); } catch (IOException ignored) {}
-        }
-        schemaLockRaf = null;
-        lockedSchemaFile = null;
-    }
-
-    private void releaseLocks() {
-        releaseProjectLock();
-        releaseSchemaLock();
-    }
-
-    private boolean writeProjectToFile(File target, boolean showErrorDialog) {
-        if (target == null) return false;
-        try {
-            lockProjectFile(target);
-            if (projectLockRaf == null) {
-                throw new IOException("Project file handle unavailable");
-            }
-            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-            try (ObjectOutputStream oos = new ObjectOutputStream(buffer)) {
-                oos.writeObject(new AppState(db, settings));
-            }
-            byte[] data = buffer.toByteArray();
-            projectLockRaf.setLength(0);
-            projectLockRaf.seek(0);
-            projectLockRaf.write(data);
-            projectLockRaf.getChannel().force(true);
-            return true;
-        } catch (Exception ex) {
-            if (showErrorDialog) {
-                JOptionPane.showMessageDialog(this, trf("Failed to save: %s", ex.getMessage()), tr("Error"), JOptionPane.ERROR_MESSAGE);
-            } else {
-                System.err.println("Failed to save project: " + ex.getMessage());
-            }
-            return false;
-        }
-    }
-
-    private void startAutoSaveTimer() {
-        stopAutoSaveTimer();
-        autoSaveTimer = new javax.swing.Timer(5 * 60 * 1000, e -> performAutoSave());
-        autoSaveTimer.setRepeats(true);
-        autoSaveTimer.start();
-    }
-
-    private void stopAutoSaveTimer() {
-        if (autoSaveTimer != null) {
-            autoSaveTimer.stop();
-            autoSaveTimer = null;
-        }
-    }
-
-    private void performAutoSave() {
-        saveCurrentPerson();
-        File target = getActiveProjectFile();
-        if (target == null) return;
-        if (writeProjectToFile(target, false)) {
-            if (currentProjectFile == null) {
-                currentProjectFile = target;
-            }
-            showSystemNotification(tr("PersonalDB"), trf("Auto-saved to %s", target.getName()));
-        }
-    }
-
-    private void performQuickSave() {
-        saveCurrentPerson();
-        File target = getActiveProjectFile();
-        if (target == null) return;
-        if (writeProjectToFile(target, true)) {
-            if (currentProjectFile == null) {
-                currentProjectFile = target;
-            }
-            showSystemNotification(tr("PersonalDB"), trf("Saved to %s", target.getName()));
-        }
-    }
-
-    private void initializeTrayIcon() {
-        if (!SystemTray.isSupported()) {
-            return;
-        }
-        if (trayIcon != null) {
-            return;
-        }
-        SystemTray tray = SystemTray.getSystemTray();
-        BufferedImage image = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2 = image.createGraphics();
-        g2.setColor(new Color(0x2F, 0x7D, 0xD3));
-        g2.fillRect(0, 0, 16, 16);
-        g2.setColor(Color.WHITE);
-        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 12f));
-        g2.drawString("P", 3, 12);
-        g2.dispose();
-        trayIcon = new TrayIcon(image, tr("PersonalDB"));
-        trayIcon.setImageAutoSize(true);
-        try {
-            tray.add(trayIcon);
-        } catch (AWTException ex) {
-            trayIcon = null;
-        }
-    }
-
-    private void removeTrayIcon() {
-        if (trayIcon != null && SystemTray.isSupported()) {
-            SystemTray.getSystemTray().remove(trayIcon);
-            trayIcon = null;
-        }
-    }
-
-    private void showSystemNotification(String title, String message) {
-        if (message == null || message.isBlank()) {
-            return;
-        }
-        if (trayIcon == null) {
-            initializeTrayIcon();
-        }
-        if (trayIcon != null) {
-            trayIcon.displayMessage(title, message, TrayIcon.MessageType.INFO);
-        } else {
-            System.out.println(title + ": " + message);
-        }
-    }
-
-    private void requestExit() {
-        saveCurrentPerson();
-        int option = JOptionPane.showConfirmDialog(this, tr("Save project before exiting?"), tr("Exit"), JOptionPane.YES_NO_CANCEL_OPTION);
-        if (option == JOptionPane.CANCEL_OPTION || option == JOptionPane.CLOSED_OPTION) {
-            return;
-        }
-        if (option == JOptionPane.YES_OPTION) {
-            File target = getActiveProjectFile();
-            if (target != null) {
-                if (!writeProjectToFile(target, true)) {
-                    return;
-                }
-            }
-        }
-        shutdown();
-    }
-
-    private void shutdown() {
-        stopAutoSaveTimer();
-        stopLanguagePackWatcher();
-        removeTrayIcon();
-        releaseLocks();
-        dispose();
-    }
-
-    private void initializeDefaultFiles() {
-        ensureDefaultProjectFile();
-        if (defaultSchemaFile == null) {
-            defaultSchemaFile = new File(DEFAULT_CONFIG_DIRECTORY, DEFAULT_SCHEMA_FILE_NAME);
-        }
-        boolean needSchema = defaultSchemaFile != null && !defaultSchemaFile.exists();
-        try {
-            lockSchemaFile(defaultSchemaFile);
-            if (needSchema || (schemaLockRaf != null && schemaLockRaf.length() == 0)) {
-                persistDefaultSchema();
-            }
-        } catch (Exception ex) {
-            System.err.println("Failed to prepare schema file: " + ex.getMessage());
-        }
-    }
-
-    private void persistDefaultSchema() {
-        if (defaultSchemaFile == null) {
-            defaultSchemaFile = new File(DEFAULT_CONFIG_DIRECTORY, DEFAULT_SCHEMA_FILE_NAME);
-        }
-        try {
-            lockSchemaFile(defaultSchemaFile);
-            if (schemaLockRaf == null) {
-                throw new IOException("Schema file handle unavailable");
-            }
-            Schema snapshot = db.snapshotSchema();
-            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-            try (ObjectOutputStream oos = new ObjectOutputStream(buffer)) {
-                oos.writeObject(snapshot);
-            }
-            byte[] data = buffer.toByteArray();
-            schemaLockRaf.setLength(0);
-            schemaLockRaf.seek(0);
-            schemaLockRaf.write(data);
-            schemaLockRaf.getChannel().force(true);
-        } catch (Exception ex) {
-            System.err.println("Failed to persist schema: " + ex.getMessage());
+            JOptionPane.showMessageDialog(this, trf("Failed to save: %s", ex.getMessage()), tr("Error"), JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -2450,7 +1869,6 @@ public class PersonalDBApp extends JFrame {
             settings.applyFrom(state.settings);
         }
         settings.ensureDataDirectoryExists();
-        defaultProjectFile = new File(settings.getDataDirectoryFile(), DEFAULT_PROJECT_FILE_NAME);
         syncLanguageFromSettings();
         refreshPeopleList();
         schemaTableModel.fireTableDataChanged();
@@ -2458,13 +1876,12 @@ public class PersonalDBApp extends JFrame {
         refreshSearchFieldCombo();
         refreshCompareCombos();
         peopleList.repaint();
-        persistDefaultSchema();
     }
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); } catch (Exception ignored) {}
-            new PersonalDBApp().setVisible(true);
+            new V1_3_0___PersonalDBApp().setVisible(true);
         });
     }
 }
