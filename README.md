@@ -8,7 +8,11 @@ Requires JRE when running, please install[ java](https://java.com/).
 Install PersonalDB_V1.4.jar into "C:\PersonalDB_COMPONENT" and RunJarPersonalDB.vbs into the same folder. 
 And please run the VBS file.
 
-## [PATCH V1.4.1] PersonalDB Desktop - WindowsJava Improvements
+## [PATCH V1.5] PersonalDB Desktop - WindowsJava Improvements
+> V1.5
+- Person List Reordering
+- Global Schema Management Overhaul
+- Improved Import/Export Folder Navigation
 > V1.4.1
 - Fixed file being locked, Disabled file lock feature.
 > V1.4
