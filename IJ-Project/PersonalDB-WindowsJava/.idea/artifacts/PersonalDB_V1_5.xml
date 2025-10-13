@@ -1,0 +1,11 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="PersonalDB_V1.5">
+    <output-path>$PROJECT_DIR$/out/artifacts/PersonalDB_V1_5</output-path>
+    <root id="archive" name="PersonalDB-WindowsJava.jar">
+      <element id="directory" name="META-INF">
+        <element id="file-copy" path="$PROJECT_DIR$/out/Release JAR/META-INF/MANIFEST.MF" />
+      </element>
+      <element id="module-output" name="PersonalDB-WindowsJava" />
+    </root>
+  </artifact>
+</component>
