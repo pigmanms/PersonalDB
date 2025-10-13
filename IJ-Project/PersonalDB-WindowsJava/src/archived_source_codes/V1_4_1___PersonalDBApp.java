@@ -1,15 +1,12 @@
+package archived_source_codes;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.Transferable;
-import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.ClosedWatchServiceException;
@@ -27,10 +24,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 
-public class PersonalDBApp extends JFrame {
+public class V1_4_1___PersonalDBApp extends JFrame {
     private static final String DEFAULT_DATA_DIRECTORY = "C:\\PersonalDB_DATA";
     private static final File DEFAULT_CONFIG_DIRECTORY = new File("C:\\PersonalDB_CONFIG");
-    private static final File DEFAULT_SCHEMA_DIRECTORY = new File(DEFAULT_CONFIG_DIRECTORY, "SCHEMA");
     private static final String GLOBAL_SCHEMA_FILE_NAME = "global_schema.psc";
     private static final String DEFAULT_PROJECT_FILE_NAME = "default_autosave.pdb";
     private static final String DEFAULT_SCHEMA_FILE_NAME = "default_global_schema.psc";
@@ -52,13 +48,6 @@ public class PersonalDBApp extends JFrame {
     private static void ensureDefaultConfigDirectory() {
         if (!DEFAULT_CONFIG_DIRECTORY.exists()) {
             DEFAULT_CONFIG_DIRECTORY.mkdirs();
-        }
-        ensureSchemaDirectoryExists();
-    }
-
-    private static void ensureSchemaDirectoryExists() {
-        if (!DEFAULT_SCHEMA_DIRECTORY.exists()) {
-            DEFAULT_SCHEMA_DIRECTORY.mkdirs();
         }
     }
 
@@ -928,12 +917,8 @@ public class PersonalDBApp extends JFrame {
     private PersonRecord currentPerson;
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
     private boolean restartScheduled = false;
-    private Schema lastKnownGlobalSchema;
-    private boolean globalSchemaModifiedThisSession = false;
-    private boolean globalSchemaDifferencePromptShown = false;
-    private boolean schemaAdjustedForLoadedProject = false;
 
-    public PersonalDBApp() {
+    public V1_4_1___PersonalDBApp() {
         super(tr("PersonalDB"));
         this.db = new PersonalDatabase();
         this.settings = new AppSettings();
@@ -950,13 +935,13 @@ public class PersonalDBApp extends JFrame {
         setupGlobalKeyBindings();
         refreshPeopleList();
         SwingUtilities.invokeLater(this::postStartupInitialization);
-        setTitle(tr("PersonalDB" + " - Patch Version: V1.5")); //TODO: AUTOMATE VERSION CONTROL
+        setTitle(tr("PersonalDB" + " - Patch Version: V1.4.1")); //TODO: AUTOMATE VERSION CONTROL
 
         WindowAdapter initialResizeListener = new WindowAdapter() {
             @Override
             public void windowOpened(WindowEvent e) {
                 forceInitialResizeWorkaround();
-                PersonalDBApp.this.removeWindowListener(this);
+                V1_4_1___PersonalDBApp.this.removeWindowListener(this);
             }
         };
         addWindowListener(initialResizeListener);
@@ -1013,7 +998,8 @@ public class PersonalDBApp extends JFrame {
     }
 
     private boolean importGlobalSchemaIntoConfig(File destination) {
-        JFileChooser fc = createSchemaFileChooser(tr("PersonalDB Schema (*.psc)"), "psc");
+        JFileChooser fc = new JFileChooser(settings.getDataDirectoryFile());
+        fc.setFileFilter(new FileNameExtensionFilter(tr("PersonalDB Schema (*.psc)"), "psc"));
         if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
             return false;
         }
@@ -1021,7 +1007,7 @@ public class PersonalDBApp extends JFrame {
         try {
             Schema schema = SchemaIO.loadSchema(selected);
             SchemaIO.saveSchema(schema, destination);
-            applySchemaFromExternal(schema, true);
+            applySchemaFromExternal(schema);
             return true;
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, trf("Failed to load schema: %s", ex.getMessage()), tr("Error"), JOptionPane.ERROR_MESSAGE);
@@ -1039,134 +1025,19 @@ public class PersonalDBApp extends JFrame {
             removeTrayIcon();
             releaseLocks();
             dispose();
-            PersonalDBApp app = new PersonalDBApp();
+            V1_4_1___PersonalDBApp app = new V1_4_1___PersonalDBApp();
             app.setVisible(true);
         });
     }
 
-    private void applySchemaFromExternal(Schema schema, boolean markAsGlobalChange) {
+    private void applySchemaFromExternal(Schema schema) {
         if (schema == null) return;
-        applySchemaAndRefresh(schema, markAsGlobalChange, markAsGlobalChange);
-    }
-
-    private void applySchemaAndRefresh(Schema schema, boolean updateGlobalFile, boolean markAsModified) {
-        if (schema == null) {
-            return;
-        }
-        PersonRecord previouslySelected = peopleList.getSelectedValue();
         db.applySchema(schema);
         schemaTableModel.fireTableDataChanged();
         refreshSearchFieldCombo();
-        refreshCompareCombos();
-        if (previouslySelected != null) {
-            peopleList.setSelectedValue(previouslySelected, true);
-        }
         buildDetailsForm(peopleList.getSelectedValue());
         peopleList.repaint();
-        persistSchema(updateGlobalFile, markAsModified);
-    }
-
-    private boolean schemasDiffer(Schema a, Schema b) {
-        if (a == null && b == null) {
-            return false;
-        }
-        if (a == null || b == null) {
-            return true;
-        }
-        if (a.fields.size() != b.fields.size()) {
-            return true;
-        }
-        for (int i = 0; i < a.fields.size(); i++) {
-            FieldDefinition af = a.fields.get(i);
-            FieldDefinition bf = b.fields.get(i);
-            if (!Objects.equals(af.name, bf.name)) {
-                return true;
-            }
-            if (af.type != bf.type) {
-                return true;
-            }
-            if (!Objects.equals(af.description, bf.description)) {
-                return true;
-            }
-            if (!Objects.equals(af.defaultValue, bf.defaultValue)) {
-                return true;
-            }
-            if (!Objects.equals(normalizeEnumOptions(af.enumOptions), normalizeEnumOptions(bf.enumOptions))) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private List<String> normalizeEnumOptions(List<String> options) {
-        if (options == null) {
-            return Collections.emptyList();
-        }
-        return new ArrayList<>(options);
-    }
-
-    private Schema mergeSchemas(Schema projectSchema, Schema globalSchema) {
-        Schema merged = projectSchema == null ? new Schema() : projectSchema.deepCopy();
-        if (globalSchema == null) {
-            return merged;
-        }
-        for (FieldDefinition globalField : globalSchema.fields) {
-            FieldDefinition existing = merged.getField(globalField.name);
-            if (existing == null) {
-                merged.fields.add(copyFieldDefinition(globalField));
-            } else {
-                existing.type = globalField.type;
-                existing.description = globalField.description;
-                existing.defaultValue = globalField.defaultValue;
-                existing.enumOptions = globalField.enumOptions == null ? null : new ArrayList<>(globalField.enumOptions);
-            }
-        }
-        return merged;
-    }
-
-    private FieldDefinition copyFieldDefinition(FieldDefinition src) {
-        FieldDefinition copy = new FieldDefinition();
-        copy.name = src.name;
-        copy.type = src.type;
-        copy.description = src.description;
-        copy.defaultValue = src.defaultValue;
-        if (src.enumOptions != null) {
-            copy.enumOptions = new ArrayList<>(src.enumOptions);
-        }
-        return copy;
-    }
-
-    private void maybePromptSchemaSyncWithGlobal() {
-        if (lastKnownGlobalSchema == null) {
-            return;
-        }
-        Schema currentSchema = db.snapshotSchema();
-        if (!schemasDiffer(currentSchema, lastKnownGlobalSchema)) {
-            return;
-        }
-        if (!globalSchemaModifiedThisSession && globalSchemaDifferencePromptShown) {
-            return;
-        }
-        schemaAdjustedForLoadedProject = false;
-        String message = "The global schema differs from this project. \n\"Merge\" (recommended) keeps all existing fields and adds new ones from the global schema. \n\"Overwrite\" will replace the project schema with the global schema. \n\"Cancel\" will not affect the original PDB file(the file currently being loaded)\n\nThis action cannot be undone.";
-        Object[] options = {"Merge (Recommended)", "Overwrite", "Cancel"};
-        int choice = JOptionPane.showOptionDialog(this, message, "Global Schema Mismatch",
-                JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[0]);
-        if (choice == 0) {
-            Schema merged = mergeSchemas(currentSchema, lastKnownGlobalSchema);
-            applySchemaAndRefresh(merged, false, false);
-            schemaAdjustedForLoadedProject = true;
-        } else if (choice == 1) {
-            applySchemaAndRefresh(lastKnownGlobalSchema.deepCopy(), false, false);
-            schemaAdjustedForLoadedProject = true;
-        }
-        if (choice == 0 || choice == 1) {
-            JOptionPane.showMessageDialog(this,
-                    "Schema update applied. ",
-                    "Schema Updated", JOptionPane.INFORMATION_MESSAGE);
-            globalSchemaModifiedThisSession = false;
-        }
-        globalSchemaDifferencePromptShown = true;
+        persistDefaultSchema();
     }
 
     private boolean loadGlobalSchemaFromConfig() {
@@ -1174,10 +1045,7 @@ public class PersonalDBApp extends JFrame {
         if (!globalSchemaFile.exists()) return false;
         try {
             Schema schema = SchemaIO.loadSchema(globalSchemaFile);
-            lastKnownGlobalSchema = schema.deepCopy();
-            globalSchemaModifiedThisSession = false;
-            globalSchemaDifferencePromptShown = false;
-            applySchemaFromExternal(schema, false);
+            applySchemaFromExternal(schema);
             return true;
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, trf("Failed to load global schema: %s", ex.getMessage()), tr("Error"), JOptionPane.ERROR_MESSAGE);
@@ -1199,7 +1067,7 @@ public class PersonalDBApp extends JFrame {
     }
 
     private void exportGlobalSchema() {
-        JFileChooser fc = createSchemaFileChooser(tr("PersonalDB Schema (*.psc)"), "psc");
+        JFileChooser fc = createFileChooser(tr("PersonalDB Schema (*.psc)"), "psc");
         if (fc.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
             return;
         }
@@ -1300,9 +1168,6 @@ public class PersonalDBApp extends JFrame {
                 buildDetailsForm(peopleList.getSelectedValue());
             }
         });
-        peopleList.setDragEnabled(true);
-        peopleList.setDropMode(DropMode.INSERT);
-        peopleList.setTransferHandler(new PeopleReorderTransferHandler());
         JButton addBtn = new JButton(tr("+ New Person"));
         addBtn.addActionListener(e -> {
             PersonRecord p = db.addPerson();
@@ -1517,7 +1382,7 @@ public class PersonalDBApp extends JFrame {
         }
         SwingUtilities.invokeLater(() -> {
             rebuildLanguageMenuItems();
-            JOptionPane.showMessageDialog(PersonalDBApp.this, "새로운 언어팩이 감지되었습니다.");
+            JOptionPane.showMessageDialog(V1_4_1___PersonalDBApp.this, "새로운 언어팩이 감지되었습니다.");
         });
     }
 
@@ -1646,7 +1511,6 @@ public class PersonalDBApp extends JFrame {
         schemaTable.setRowSelectionInterval(target, target);
         refreshSearchFieldCombo();
         buildDetailsForm(peopleList.getSelectedValue());
-        persistSchemaAfterUserChange();
     }
 
     private void refreshSearchFieldCombo() {
@@ -1737,135 +1601,6 @@ public class PersonalDBApp extends JFrame {
         for (PersonRecord p : db.people) peopleListModel.addElement(p);
         refreshSearchFieldCombo();
         refreshCompareCombos();
-    }
-
-    private void syncPeopleOrderWithListModel() {
-        db.people.clear();
-        for (int i = 0; i < peopleListModel.size(); i++) {
-            db.people.add(peopleListModel.getElementAt(i));
-        }
-        refreshCompareCombos();
-    }
-
-    private class PeopleReorderTransferHandler extends TransferHandler {
-        private final DataFlavor personArrayFlavor = new DataFlavor(PersonRecord[].class, "application/x-java-person-array");
-        private int[] indices;
-        private int addIndex = -1;
-        private int addCount = 0;
-
-        @Override
-        protected Transferable createTransferable(JComponent c) {
-            @SuppressWarnings("unchecked")
-            JList<PersonRecord> list = (JList<PersonRecord>) c;
-            indices = list.getSelectedIndices();
-            PersonRecord[] values = list.getSelectedValuesList().toArray(new PersonRecord[0]);
-            return new PersonRecordTransferable(values);
-        }
-
-        @Override
-        public boolean canImport(TransferSupport support) {
-            return support.isDrop() && support.isDataFlavorSupported(personArrayFlavor) && support.getComponent() == peopleList;
-        }
-
-        @Override
-        public int getSourceActions(JComponent c) {
-            return MOVE;
-        }
-
-        @Override
-        public boolean importData(TransferSupport support) {
-            if (!canImport(support)) {
-                return false;
-            }
-            JList.DropLocation dl = (JList.DropLocation) support.getDropLocation();
-            int index = dl.getIndex();
-            int max = peopleListModel.getSize();
-            if (index < 0 || index > max) {
-                index = max;
-            }
-            if (indices != null && index >= indices[0] - 1 && index <= indices[indices.length - 1]) {
-                indices = null;
-                return false;
-            }
-            addIndex = index;
-            try {
-                PersonRecord[] values = (PersonRecord[]) support.getTransferable().getTransferData(personArrayFlavor);
-                addCount = values.length;
-                for (PersonRecord value : values) {
-                    peopleListModel.add(index++, value);
-                }
-                syncPeopleOrderWithListModel();
-                return true;
-            } catch (UnsupportedFlavorException | IOException ex) {
-                ex.printStackTrace();
-            }
-            return false;
-        }
-
-        @Override
-        protected void exportDone(JComponent source, Transferable data, int action) {
-            if (action != MOVE || indices == null) {
-                cleanup();
-                return;
-            }
-            if (addCount > 0) {
-                for (int i = 0; i < indices.length; i++) {
-                    if (indices[i] >= addIndex) {
-                        indices[i] += addCount;
-                    }
-                }
-            }
-            Arrays.sort(indices);
-            for (int i = indices.length - 1; i >= 0; i--) {
-                peopleListModel.remove(indices[i]);
-            }
-            if (addCount > 0 && addIndex >= 0) {
-                int size = peopleListModel.getSize();
-                if (size > 0) {
-                    int start = Math.min(addIndex, Math.max(0, size - addCount));
-                    int length = Math.min(addCount, size - start);
-                    int[] selection = new int[length];
-                    for (int i = 0; i < length; i++) {
-                        selection[i] = start + i;
-                    }
-                    peopleList.setSelectedIndices(selection);
-                }
-            }
-            syncPeopleOrderWithListModel();
-            cleanup();
-        }
-
-        private void cleanup() {
-            indices = null;
-            addIndex = -1;
-            addCount = 0;
-        }
-
-        private class PersonRecordTransferable implements Transferable {
-            private final PersonRecord[] values;
-
-            PersonRecordTransferable(PersonRecord[] values) {
-                this.values = values == null ? new PersonRecord[0] : values.clone();
-            }
-
-            @Override
-            public DataFlavor[] getTransferDataFlavors() {
-                return new DataFlavor[]{personArrayFlavor};
-            }
-
-            @Override
-            public boolean isDataFlavorSupported(DataFlavor flavor) {
-                return personArrayFlavor.equals(flavor);
-            }
-
-            @Override
-            public Object getTransferData(DataFlavor flavor) throws UnsupportedFlavorException {
-                if (!isDataFlavorSupported(flavor)) {
-                    throw new UnsupportedFlavorException(flavor);
-                }
-                return values.clone();
-            }
-        }
     }
 
     // Build details form dynamically per schema
@@ -2232,7 +1967,7 @@ public class PersonalDBApp extends JFrame {
                 schemaTableModel.fireTableDataChanged();
                 refreshSearchFieldCombo();
                 buildDetailsForm(peopleList.getSelectedValue());
-                persistSchemaAfterUserChange();
+                persistDefaultSchema();
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, ex.getMessage(), tr("Error"), JOptionPane.ERROR_MESSAGE);
             }
@@ -2250,7 +1985,7 @@ public class PersonalDBApp extends JFrame {
             schemaTableModel.fireTableDataChanged();
             refreshSearchFieldCombo();
             buildDetailsForm(peopleList.getSelectedValue());
-            persistSchemaAfterUserChange();
+            persistDefaultSchema();
         }
     }
 
@@ -2278,7 +2013,7 @@ public class PersonalDBApp extends JFrame {
                 if (newName.isBlank() || newName.equals(f.name)) return;
                 FieldDefinition existing = db.schema.getField(newName);
                 if (existing != null && existing != f) {
-                    JOptionPane.showMessageDialog(PersonalDBApp.this, tr("Field name already exists."));
+                    JOptionPane.showMessageDialog(V1_4_1___PersonalDBApp.this, tr("Field name already exists."));
                     return;
                 }
                 String oldName = f.name;
@@ -2299,7 +2034,7 @@ public class PersonalDBApp extends JFrame {
             fireTableRowsUpdated(rowIndex, rowIndex);
             refreshSearchFieldCombo();
             buildDetailsForm(peopleList.getSelectedValue());
-            persistSchemaAfterUserChange();
+            persistDefaultSchema();
         }
     }
 
@@ -2311,13 +2046,10 @@ public class PersonalDBApp extends JFrame {
         db.people.clear();
         db.schema = new Schema();
         ensureConfigDirectoryExists();
-        boolean loadedGlobal = loadGlobalSchemaFromConfig();
-        if (!loadedGlobal) {
+        if (!loadGlobalSchemaFromConfig()) {
             seedInitialSchema(db.schema);
-            persistSchemaAfterUserChange();
-        } else {
-            persistDefaultSchema();
         }
+        persistDefaultSchema();
         currentProjectFile = null;
         File active = getActiveProjectFile();
         if (active != null) {
@@ -2347,10 +2079,6 @@ public class PersonalDBApp extends JFrame {
                     throw new IOException(tr("Unknown project format."));
                 }
                 currentProjectFile = f;
-                if (schemaAdjustedForLoadedProject && currentProjectFile != null) {
-                    writeProjectToFile(currentProjectFile, false);
-                    schemaAdjustedForLoadedProject = false;
-                }
                 JOptionPane.showMessageDialog(this, trf("Loaded %s", f.getName()));
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, trf("Failed to open: %s", ex.getMessage()), tr("Error"), JOptionPane.ERROR_MESSAGE);
@@ -2561,19 +2289,11 @@ public class PersonalDBApp extends JFrame {
     }
 
     private void persistDefaultSchema() {
-        persistSchema(false, false);
-    }
-
-    private void persistSchemaAfterUserChange() {
-        persistSchema(true, true);
-    }
-
-    private void persistSchema(boolean updateGlobalFile, boolean markAsModified) {
         if (defaultSchemaFile == null) {
             defaultSchemaFile = new File(DEFAULT_CONFIG_DIRECTORY, DEFAULT_SCHEMA_FILE_NAME);
         }
-        Schema snapshot = db.snapshotSchema();
         try {
+            Schema snapshot = db.snapshotSchema();
             File parent = defaultSchemaFile.getParentFile();
             if (parent != null && !parent.exists()) {
                 parent.mkdirs();
@@ -2586,19 +2306,6 @@ public class PersonalDBApp extends JFrame {
             }
         } catch (Exception ex) {
             System.err.println("Failed to persist schema: " + ex.getMessage());
-        }
-        if (updateGlobalFile) {
-            try {
-                File globalFile = new File(DEFAULT_CONFIG_DIRECTORY, GLOBAL_SCHEMA_FILE_NAME);
-                SchemaIO.saveSchema(snapshot, globalFile);
-                lastKnownGlobalSchema = snapshot.deepCopy();
-            } catch (Exception ex) {
-                System.err.println("Failed to persist global schema: " + ex.getMessage());
-            }
-        }
-        if (markAsModified) {
-            globalSchemaModifiedThisSession = true;
-            globalSchemaDifferencePromptShown = false;
         }
     }
 
@@ -2642,22 +2349,10 @@ public class PersonalDBApp extends JFrame {
     }
 
     private JFileChooser createFileChooser(String description, String extension) {
-        return createFileChooser(description, extension, settings.getDataDirectoryFile());
-    }
-
-    private JFileChooser createFileChooser(String description, String extension, File baseDirectory) {
-        File base = baseDirectory;
-        if (base != null && !base.exists()) {
-            base.mkdirs();
-        }
-        JFileChooser fc = (base != null && base.exists()) ? new JFileChooser(base) : new JFileChooser();
+        File base = settings.getDataDirectoryFile();
+        JFileChooser fc = base.exists() ? new JFileChooser(base) : new JFileChooser();
         fc.setFileFilter(new FileNameExtensionFilter(description, extension));
         return fc;
-    }
-
-    private JFileChooser createSchemaFileChooser(String description, String extension) {
-        ensureSchemaDirectoryExists();
-        return createFileChooser(description, extension, DEFAULT_SCHEMA_DIRECTORY);
     }
 
     private void applyLoadedState(AppState state) {
@@ -2677,14 +2372,13 @@ public class PersonalDBApp extends JFrame {
         refreshSearchFieldCombo();
         refreshCompareCombos();
         peopleList.repaint();
-        maybePromptSchemaSyncWithGlobal();
         persistDefaultSchema();
     }
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); } catch (Exception ignored) {}
-            new PersonalDBApp().setVisible(true);
+            new V1_4_1___PersonalDBApp().setVisible(true);
         });
     }
 }
